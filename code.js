@@ -4,15 +4,22 @@ function doGet(e) {
       .setTitle('Vital Vortex')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   }
-  return handleRequest(e);
+  const result = handleRequest(e);
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.TEXT);
 }
 
-function doPost(e) { return handleRequest(e); }
+function doPost(e) {
+  const result = handleRequest(e);
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.TEXT);
+}
 
+// Called directly by google.script.run from the browser (deployed mode).
+// Accepts a plain JS object with an 'action' property instead of a request object.
 function handleRequest(e) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const body = e.postData ? JSON.parse(e.postData.contents) : {};
-  const action = e.parameter.action || body.action || '';
+  // Support both: plain object from google.script.run, and HTTP request from doGet/doPost
+  const body   = (e && e.postData) ? JSON.parse(e.postData.contents) : (e || {});
+  const action = (e && e.parameter && e.parameter.action) || body.action || '';
 
   if (action === 'read') {
     const sheet = ss.getSheetByName('Menu') || ss.getSheets()[0];
@@ -71,7 +78,10 @@ function handleRequest(e) {
 }
 
 function out(obj) {
-  return ContentService
-    .createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.TEXT);
+  // When called via google.script.run, return a plain object.
+  // When called via doGet/doPost (HTTP), return a ContentService response.
+  // We detect the context by checking if ContentService is being used in an HTTP request.
+  // Since handleRequest is called both ways, always return plain obj —
+  // doGet/doPost callers won't use the return value directly anyway in this app.
+  return obj;
 }

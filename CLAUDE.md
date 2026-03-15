@@ -23,47 +23,51 @@ The app tracks daily meals across 5 meal slots (Breakfast, Morning Snack, Lunch,
 
 ## Source Control (Git)
 
-Git is installed and the repo is initialized in `C:\Vital Vortex`. There is no remote — it is purely a local safety net so changes can be reverted if something goes wrong. **The user does not know what git is and does not need to interact with it at all.** Claude handles all commits silently as part of its normal workflow.
+Git is installed and the repo is initialized in `C:\Vital Vortex`. There is no remote — it is purely a local safety net so changes can be reverted if something goes wrong. **The user does not know what git is and does not need to interact with it at all.**
 
 ### What is tracked vs. ignored
 
 `vitalvortex_data.json` is listed in `.gitignore` and is **never committed** — it contains personal daily food and health data. Everything else (`Index.html`, `server.py`, `CLAUDE.md`, etc.) is tracked.
 
-### When to commit
+### Important: Claude cannot run git commands directly
 
-Commit **after every successful change** — once a feature or fix is working and the user is happy with it. Do not commit broken or half-finished work.
+**`bash_tool` does not have access to the Windows filesystem.** Git commands written in bash will fail. Claude must use one of these approaches instead:
 
-### How to commit
+**Option 1 — Ask her to run `git-commit.bat`** (preferred, easiest for her):
+A file called `git-commit.bat` exists in `C:\Vital Vortex`. Tell her to double-click it after a successful session to save a snapshot. It commits everything with a timestamped message. She just needs to double-click and close the window.
 
-Use `bash_tool` to run git commands in the repo directory:
-
-```bash
+**Option 2 — Ask her to open Command Prompt and run a command:**
+If a specific commit message is needed, ask her to open Command Prompt, paste the command, and press Enter. Keep the command to a single line:
+```
 cd "C:\Vital Vortex" && git add -A && git commit -m "your message here"
 ```
+Frame this as: *"Open Command Prompt, paste this, and press Enter."* She can open it by pressing Windows+R, typing `cmd`, and pressing Enter.
 
-Write commit messages in plain present-tense English that describe what the change does from the user's perspective — not technical implementation details. Good examples:
+### When to commit
 
+After every successful change or work session — once things are working and she's happy. Remind her at the end of the conversation: *"When you're done, double-click `git-commit.bat` to save a snapshot."*
+
+### Commit message style
+
+Plain present-tense English describing what changed from her perspective:
 - `Add calorie goal progress bar to Today page`
 - `Fix water cups not saving after browser refresh`
-- `Change protein goal default to 120g`
-- `Add new Dinner section to meal planner`
+- `Add deployment scripts and data sync tools`
 
-### How to check history or revert (if ever needed)
+### How to revert (if something breaks)
 
-If something breaks and needs to be rolled back, you can:
-
-```bash
+If she needs to roll back, ask her to open Command Prompt and run:
+```
 # See recent commits
 cd "C:\Vital Vortex" && git log --oneline -10
 
-# Revert the last commit (keeps files, undoes commit)
+# Undo the last commit (keeps files, just undoes the snapshot)
 cd "C:\Vital Vortex" && git revert HEAD
 
-# Hard reset to a specific commit (use commit hash from log)
+# Hard reset to a specific commit (use the hash from the log above)
 cd "C:\Vital Vortex" && git reset --hard <hash>
 ```
-
-If a revert is needed, handle it yourself — do not ask the user to run git commands.
+Walk her through this step by step if it ever comes up — don't assume she knows what any of it means.
 
 ---
 
@@ -136,35 +140,72 @@ C:\Vital Vortex\
 
 All app logic lives in `Index.html` as a single-file app:
 
-- **`API_URL`** — points to `http://localhost:8765/api`
-- **`apiFetch()`** — talks to local server instead of Google Apps Script
-- **`STARTER_FOODS`** — 42 hardcoded starter foods, seeded into `vitalvortex_data.json` on first launch if it's empty
+- **`IS_LOCAL`** — detected at runtime; `true` when running on localhost, `false` when deployed
+- **`API_URL`** — points to `http://localhost:8765/api` (only used when `IS_LOCAL` is true)
+- **`apiFetch()`** — when local, calls the Python server via `fetch()`; when deployed, calls `google.script.run.handleRequest()` directly
+- **`STARTER_FOODS`** — hardcoded starter foods, seeded into storage on first launch if empty
 - **`state`** — in-memory app state (foods, meals, water, tomorrowMeals, nextId)
-- **`localStorage`** — used as a fast in-browser cache; the JSON file is the source of truth
+- **`localStorage`** — used as a fast in-browser cache; the backing store (JSON file or Google Sheet) is the source of truth
 - **`dailyLog`** — history of saved days, keyed by `YYYY-MM-DD`
 
-### Data actions handled by `server.py`:
+### Data actions (handled by both `server.py` locally and `code.js` when deployed):
 
-| Action | Method | What it does |
-|---|---|---|
-| `read` | GET | Returns all foods from `vitalvortex_data.json` |
-| `write` | POST | Overwrites the foods array in the JSON file |
-| `loadplan` | GET | Returns the saved daily plan blob |
-| `saveplan` | POST | Saves the daily plan blob |
-| `readlog` | GET | Returns the full history log |
-| `log` | POST | Writes or updates a single day's log entry |
+| Action | What it does |
+|---|---|
+| `read` | Returns all foods |
+| `write` | Overwrites the foods array |
+| `loadplan` | Returns the saved daily plan blob |
+| `saveplan` | Saves the daily plan blob |
+| `readlog` | Returns the full history log |
+| `log` | Writes or updates a single day's log entry |
 
 ---
 
-## Future: Syncing Back to Google Sheets
+## Deployment (Live Web App)
 
-`code.js` contains the original Google Apps Script backend. When it's time to go back to the live web app, a sync script should:
+The app is deployed as a Google Apps Script web app. The live version runs in the browser (including on her phone) without needing the local Python server.
 
-1. Read `vitalvortex_data.json`
-2. Push the `foods` array to the `Menu` sheet
-3. Push the `log` entries to the `Daily Log` sheet
-4. Push the `plan` blob to the `Plan` sheet
-5. Copy the contents of `Index.html` into the Google Apps Script `Index.html` file
-6. Deploy a new version of the web app
+**The deployed app reads and writes directly to the Google Sheet** — it does not use `vitalvortex_data.json`. The local JSON file and the Google Sheet are two separate data stores that must be explicitly synced using the scripts below.
 
-The API shape in `code.js` matches exactly what `server.py` implements locally, so the HTML file should work in both environments with only the `API_URL` constant needing to change.
+**Her agreement:** She only uses the deployed web app URL for entering real daily data. Local development is for app changes only, not for tracking food.
+
+### Deployment scripts (all live in `C:\Vital Vortex\Deployment\`):
+
+| Script | What it does | When to use |
+|---|---|---|
+| `deploy.py` | Pushes the latest `Index.html` and `code.js` to Google Apps Script and creates a new version | After any change to the app UI or backend logic |
+| `json_to_sheet.py` | Copies all data from local `vitalvortex_data.json` **up** into the Google Sheet | Once after a local data editing session, or to seed the sheet with new foods added locally |
+| `sheet_to_json.py` | Pulls all data from the Google Sheet **down** into local `vitalvortex_data.json` | Before a local work session, to make sure local data reflects what was entered in the live app |
+
+**To run a script:** Double-click the `.py` file, or open Command Prompt in the `Deployment` folder and type `python scriptname.py`. The window will stay open until she presses Enter.
+
+**All three scripts share the same Google login token.** The first time after the token is deleted, whichever script runs first will open a browser login. After that, all scripts reuse the cached token automatically.
+
+---
+
+## Data Sync — When to Suggest Which Script
+
+This is important. The local `vitalvortex_data.json` and the live Google Sheet are **not automatically in sync**. As an agent working locally, you can only see what is in `vitalvortex_data.json`. Data entered through the deployed web app (e.g. on her phone) lives in the Google Sheet and is invisible to you until synced down.
+
+### Trigger rules for agents:
+
+**Suggest running `sheet_to_json.py` when:**
+- She asks about data (foods, history, log entries) and the local JSON file is empty, missing entries, or clearly out of date relative to what she describes
+- She says something like "I logged that yesterday" or "I added that food last week" but it doesn’t appear in `vitalvortex_data.json`
+- She mentions she has been using the app on her phone or via the website
+- She asks you to analyze her history or food list and the data looks sparse or stale
+- She asks "why doesn’t my data show up" or similar
+- **In general: if you need to look at her data and `vitalvortex_data.json` seems incomplete, always suggest this script first before concluding the data doesn’t exist.**
+
+**Suggest running `json_to_sheet.py` when:**
+- You (the agent) have just made significant additions to `vitalvortex_data.json` locally (e.g. added many new foods she researched)
+- She wants changes made locally to appear in the live app on her phone
+- She says "push my changes up" or similar
+
+**Suggest running `deploy.py` when:**
+- You have just made changes to `Index.html` or `code.js` that she wants to appear in the live deployed app
+- She says "publish" or "deploy" or "update the live app"
+
+### How to phrase the suggestion (keep it simple):
+
+> “I don’t see that data in your local file — it might only exist in the live app. To pull it down, double-click **sheet_to_json.py** in your Deployment folder, wait for it to finish, then come back and I’ll take another look.”
