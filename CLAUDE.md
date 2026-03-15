@@ -29,23 +29,17 @@ Git is installed and the repo is initialized in `C:\Vital Vortex`. There is no r
 
 `vitalvortex_data.json` is listed in `.gitignore` and is **never committed** — it contains personal daily food and health data. Everything else (`Index.html`, `server.py`, `CLAUDE.md`, etc.) is tracked.
 
-### Important: Claude cannot run git commands directly
+### How Claude handles git
 
-**`bash_tool` does not have access to the Windows filesystem.** Git commands written in bash will fail. Claude must use one of these approaches instead:
+Claude has direct access to git via the `git` MCP server. **The user never needs to run any git commands herself.** Claude handles all of this silently.
 
-**Option 1 — Ask her to run `git-commit.bat`** (preferred, easiest for her):
-A file called `git-commit.bat` exists in `C:\Vital Vortex`. Tell her to double-click it after a successful session to save a snapshot. It commits everything with a timestamped message. She just needs to double-click and close the window.
+Tools available: `git:git_status`, `git:git_add`, `git:git_commit`, `git:git_log`, `git:git_diff_unstaged`, `git:git_diff_staged`, `git:git_branch`, `git:git_reset`.
 
-**Option 2 — Ask her to open Command Prompt and run a command:**
-If a specific commit message is needed, ask her to open Command Prompt, paste the command, and press Enter. Keep the command to a single line:
-```
-cd "C:\Vital Vortex" && git add -A && git commit -m "your message here"
-```
-Frame this as: *"Open Command Prompt, paste this, and press Enter."* She can open it by pressing Windows+R, typing `cmd`, and pressing Enter.
+All git tool calls use `repo_path: C:\Vital Vortex`.
 
 ### When to commit
 
-After every successful change or work session — once things are working and she's happy. Remind her at the end of the conversation: *"When you're done, double-click `git-commit.bat` to save a snapshot."*
+After every successful change — once a feature or fix is working and she's happy with it. Do not commit broken or half-finished work. Stage with `git:git_add` then commit with `git:git_commit`.
 
 ### Commit message style
 
@@ -56,18 +50,11 @@ Plain present-tense English describing what changed from her perspective:
 
 ### How to revert (if something breaks)
 
-If she needs to roll back, ask her to open Command Prompt and run:
+Use `git:git_log` to find the target commit hash, then ask her to open Command Prompt and run:
 ```
-# See recent commits
-cd "C:\Vital Vortex" && git log --oneline -10
-
-# Undo the last commit (keeps files, just undoes the snapshot)
-cd "C:\Vital Vortex" && git revert HEAD
-
-# Hard reset to a specific commit (use the hash from the log above)
 cd "C:\Vital Vortex" && git reset --hard <hash>
 ```
-Walk her through this step by step if it ever comes up — don't assume she knows what any of it means.
+Explain in plain terms what this does before asking her to run it.
 
 ---
 
