@@ -1,0 +1,6 @@
+# Personal data — not part of the codebase
+vitalvortex_data.json
+
+# Python cache
+__pycache__/
+*.pyc
