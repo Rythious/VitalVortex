@@ -171,10 +171,18 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
 .picker-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
 .picker-search { width: 100%; padding: 13px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 16px; margin-bottom: 10px; outline: none; font-family: 'Nunito', sans-serif; }
 .picker-search:focus { border-color: var(--lav-mid); }
-.picker-item { display: flex; align-items: center; justify-content: space-between; padding: 13px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+.picker-item { display: flex; align-items: center; justify-content: space-between; padding: 13px 0; border-bottom: none; cursor: pointer; }
 .picker-item:active { background: var(--lavender); margin: 0 -16px; padding: 13px 16px; }
+.picker-item.expanded { background: var(--lavender); margin: 0 -16px; padding: 13px 16px; border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
 .picker-food-name { font-weight: 700; font-size: 14px; }
 .picker-food-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.picker-qty-row { display: none; align-items: center; justify-content: space-between; padding: 10px 16px 13px; margin: 0 -16px; background: var(--lavender); border-radius: 0 0 var(--radius-sm) var(--radius-sm); border-top: 1px solid rgba(168,85,247,0.25); margin-bottom: 1px; gap: 10px; border-bottom: 1px solid var(--border); }
+.picker-qty-row.open { display: flex; }
+.picker-qty-controls { display: flex; align-items: center; gap: 0; background: var(--card); border: 1px solid var(--lav-mid); border-radius: var(--radius-sm); overflow: hidden; }
+.picker-qty-btn { width: 38px; height: 38px; border: none; background: transparent; color: var(--lav-dark); font-size: 22px; font-weight: 700; cursor: pointer; font-family: 'Nunito', sans-serif; display: flex; align-items: center; justify-content: center; }
+.picker-qty-btn:active { background: rgba(168,85,247,0.2); }
+.picker-qty-num { min-width: 36px; text-align: center; font-size: 18px; font-weight: 800; color: var(--text); padding: 0 4px; }
+.picker-qty-add { flex: 1; padding: 10px 0; background: var(--vv-accent); border: none; border-radius: var(--radius-sm); color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; font-family: 'Nunito', sans-serif; text-align: center; }
 .picker-close { float: right; border: none; background: transparent; font-size: 28px; cursor: pointer; color: var(--muted); margin-top: -6px; font-family: 'Nunito', sans-serif; padding: 4px 8px; }
 
 /* Menu */
@@ -1369,8 +1377,52 @@ function openPickerFor(context,mi){
   setTimeout(()=>document.getElementById('pickerSearch').focus(),100);
 }
 function openPicker(mi){openPickerFor('today',mi);}
+let pickerSelectedId = null;
 function pickerItemHTML(f){
-  return `<div class="picker-item" onclick="pickFood(${f.id})"><div><div class="picker-food-name">${f.name}</div><div class="picker-food-meta">${f.portion} &middot; ${f.cal} cal &middot; Fat:${f.fat}g C:${f.carb}g Fb:${f.fiber}g Sg:${f.sugar}g P:${f.protein}g</div></div><span style="color:var(--vv-accent);font-size:20px;font-weight:700;margin-left:8px">+</span></div>`;
+  return `<div id="pitem-${f.id}"><div class="picker-item" id="pirow-${f.id}" onclick="selectPickerFood(${f.id})"><div><div class="picker-food-name">${f.name}</div><div class="picker-food-meta">${f.portion} &middot; ${f.cal} cal &middot; Fat:${f.fat}g C:${f.carb}g Fb:${f.fiber}g Sg:${f.sugar}g P:${f.protein}g</div></div><span style="color:var(--vv-accent);font-size:20px;font-weight:700;margin-left:8px" id="pplus-${f.id}">+</span></div><div class="picker-qty-row" id="pqty-${f.id}"><div class="picker-qty-controls"><button class="picker-qty-btn" onclick="changePickerQty(${f.id},-1)">−</button><div class="picker-qty-num" id="pqnum-${f.id}">1</div><button class="picker-qty-btn" onclick="changePickerQty(${f.id},1)">+</button></div><button class="picker-qty-add" onclick="confirmPickerFood(${f.id})">✦ Add to Meal</button></div></div>`;
+}
+function selectPickerFood(id){
+  // collapse previously selected
+  if(pickerSelectedId && pickerSelectedId !== id){
+    const prev = document.getElementById('pqty-'+pickerSelectedId);
+    const prevRow = document.getElementById('pirow-'+pickerSelectedId);
+    const prevPlus = document.getElementById('pplus-'+pickerSelectedId);
+    if(prev){ prev.classList.remove('open'); }
+    if(prevRow){ prevRow.classList.remove('expanded'); }
+    if(prevPlus){ prevPlus.textContent = '+'; }
+  }
+  const qtyRow = document.getElementById('pqty-'+id);
+  const itemRow = document.getElementById('pirow-'+id);
+  const plusBtn = document.getElementById('pplus-'+id);
+  const isOpen = qtyRow && qtyRow.classList.contains('open');
+  if(isOpen){
+    // tap again = collapse
+    qtyRow.classList.remove('open');
+    itemRow.classList.remove('expanded');
+    if(plusBtn) plusBtn.textContent = '+';
+    pickerSelectedId = null;
+  } else {
+    // reset qty to 1
+    const num = document.getElementById('pqnum-'+id);
+    if(num) num.textContent = '1';
+    if(qtyRow) qtyRow.classList.add('open');
+    if(itemRow) itemRow.classList.add('expanded');
+    if(plusBtn) plusBtn.textContent = '×';
+    pickerSelectedId = id;
+  }
+}
+function changePickerQty(id, delta){
+  const num = document.getElementById('pqnum-'+id);
+  if(!num) return;
+  const current = parseInt(num.textContent) || 1;
+  const next = Math.max(1, Math.min(20, current + delta));
+  num.textContent = next;
+}
+function confirmPickerFood(id){
+  const num = document.getElementById('pqnum-'+id);
+  const qty = num ? parseInt(num.textContent) || 1 : 1;
+  pickerSelectedId = null;
+  for(let i = 0; i < qty; i++) pickFood(id);
 }
 function renderPickerItems(){
   const q=document.getElementById('pickerSearch').value.toLowerCase();
@@ -1472,7 +1524,7 @@ function addAnotherServing(mi, fid){
   const f=state.foods.find(x=>x.id===realId(fid));
   if(f)toast('✦ +1 '+f.name+'!');
 }
-function closePicker(){document.getElementById('foodPicker').style.display='none';}
+function closePicker(){document.getElementById('foodPicker').style.display='none';pickerSelectedId=null;}
 function removeFood(mi,fid){const meal=state.meals[mi];const idx=meal.indexOf(fid);if(idx>-1)meal.splice(idx,1);saveLocal();renderPlanner();savePlanToSheet();}
 function removeFoodGroup(mi,fid){state.meals[mi]=state.meals[mi].filter(x=>x!==fid);saveLocal();renderPlanner();savePlanToSheet();}
 
