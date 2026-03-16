@@ -457,15 +457,35 @@ const API_URL  = 'http://localhost:8765/api'; // only used when IS_LOCAL is true
 
 // ─── PROFILE & GOAL CALCULATOR ─────────────────────────────────────────────
 let userProfile = {age:38, heightIn:63, weightLbs:194, goalLbs:165, activity:1.375, ratePerWeek:1500};
+let customGoals = {}; // overrides: {cal, protein, fat, carb} — empty means use calcGoals()
 
 function loadProfile(){
   try{
     const p=localStorage.getItem('vitalvortex_profile');
     if(p) userProfile=JSON.parse(p);
+    const c=localStorage.getItem('vitalvortex_custom_goals');
+    if(c) customGoals=JSON.parse(c);
   }catch(e){}
 }
 function saveProfileLocal(){
-  try{localStorage.setItem('vitalvortex_profile',JSON.stringify(userProfile));}catch(e){}
+  try{
+    localStorage.setItem('vitalvortex_profile',JSON.stringify(userProfile));
+    localStorage.setItem('vitalvortex_custom_goals',JSON.stringify(customGoals));
+  }catch(e){}
+}
+function activeGoals(){
+  // Returns the goals actually in use: custom overrides on top of calculated values
+  const g = calcGoals(userProfile);
+  return {
+    cal:     customGoals.cal     ?? g.cal,
+    protein: customGoals.protein ?? g.protein,
+    fat:     customGoals.fat     ?? g.fat,
+    carb:    customGoals.carb    ?? g.carb,
+    sugar:   g.sugar,
+    fiber:   g.fiber,
+    tdee:    g.tdee,
+    bmr:     g.bmr
+  };
 }
 function calcGoals(profile){
   // Mifflin-St Jeor BMR for female
@@ -486,37 +506,83 @@ function renderProfilePage(){
   document.getElementById('p-goal').value = userProfile.goalLbs;
   document.getElementById('p-activity').value = userProfile.activity;
   document.getElementById('p-rate').value = userProfile.ratePerWeek;
-  // show current calculated goals
-  const g = calcGoals(userProfile);
+  const g = calcGoals(userProfile);  // always the pure formula recommendation
+  const a = activeGoals();           // what's actually in use (may include custom overrides)
   const weeksLeft = Math.ceil((userProfile.weightLbs - userProfile.goalLbs) / (userProfile.ratePerWeek/500));
+  const hasCustom = Object.keys(customGoals).length > 0;
+  const goalFields = [
+    {key:'cal',     label:'Calories/day', rec:g.cal,         unit:'',  color:'#FF2D2D', cur:a.cal},
+    {key:'protein', label:'Protein/day',  rec:g.protein,     unit:'g', color:'#BF5FFF', cur:a.protein},
+    {key:'fat',     label:'Fat/day',      rec:g.fat,         unit:'g', color:'#FF7A00', cur:a.fat},
+    {key:'carb',    label:'Carbs/day',    rec:g.carb,        unit:'g', color:'#FFD600', cur:a.carb},
+  ];
+  const inputCards = goalFields.map(f=>{
+    const isCustom = customGoals[f.key] !== undefined;
+    return `<div style="background:var(--card);border:1px solid ${isCustom?f.color:'var(--border)'};border-radius:var(--radius-sm);padding:10px;text-align:center">
+      <input id="cg-${f.key}" type="number" min="1" value="${f.cur}" style="width:100%;background:transparent;border:none;outline:none;font-size:20px;font-weight:800;color:${f.color};text-align:center;font-family:'Nunito',sans-serif;padding:0;margin-bottom:2px">
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700">${f.label}</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:3px">rec: ${f.rec}${f.unit}${isCustom?' <span style="color:'+f.color+';font-weight:700">✎</span>':''}</div>
+    </div>`;
+  }).join('');
   document.getElementById('profileResults').innerHTML = `
     <div class="add-form" style="border-color:rgba(0,255,212,0.2);margin-top:0">
-      <div class="form-title" style="color:var(--mint-dark)">Current Goals</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;text-align:center">
-          <div style="font-size:20px;font-weight:800;color:#FF2D2D">${g.cal}</div>
-          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700">Calories/day</div>
-        </div>
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;text-align:center">
-          <div style="font-size:20px;font-weight:800;color:#BF5FFF">${g.protein}g</div>
-          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700">Protein/day</div>
-        </div>
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;text-align:center">
-          <div style="font-size:20px;font-weight:800;color:#FF7A00">${g.fat}g</div>
-          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700">Fat/day</div>
-        </div>
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;text-align:center">
-          <div style="font-size:20px;font-weight:800;color:#FFD600">${g.carb}g</div>
-          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700">Carbs/day</div>
-        </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="form-title" style="color:var(--mint-dark);margin-bottom:0">Daily Goals</div>
+        ${hasCustom ? '<span style="font-size:10px;font-weight:700;background:rgba(0,255,212,0.12);color:var(--mint-mid);padding:3px 8px;border-radius:10px">✎ custom</span>' : '<span style="font-size:10px;color:var(--muted)">tap any value to edit</span>'}
       </div>
-      <div style="font-size:12px;color:var(--muted);line-height:1.6">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">${inputCards}</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button onclick="saveCustomGoals()" style="flex:1;padding:10px;background:var(--vv-accent);border:none;border-radius:var(--radius-sm);color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:'Nunito',sans-serif">✦ Save My Goals</button>
+        ${hasCustom ? '<button onclick="resetCustomGoals()" style="padding:10px 14px;background:transparent;border:1px solid var(--lav-mid);border-radius:var(--radius-sm);color:var(--lav-dark);font-weight:700;font-size:13px;cursor:pointer;font-family:\'Nunito\',sans-serif">↺ Reset to Recommended</button>' : ''}
+      </div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;border-top:1px solid var(--border);padding-top:10px">
         BMR: <strong style="color:var(--text)">${g.bmr} cal</strong> &middot;
         TDEE: <strong style="color:var(--text)">${g.tdee} cal</strong> &middot;
         Deficit: <strong style="color:#FF2D2D">${g.tdee - g.cal} cal/day</strong><br>
         ${userProfile.weightLbs > userProfile.goalLbs ? `Est. <strong style="color:var(--vv-accent2)">${weeksLeft} weeks</strong> to reach ${userProfile.goalLbs} lbs` : '🎉 Goal weight reached!'}
       </div>
     </div>`;
+}
+function saveCustomGoals(){
+  const cal     = parseInt(document.getElementById('cg-cal').value);
+  const protein = parseInt(document.getElementById('cg-protein').value);
+  const fat     = parseInt(document.getElementById('cg-fat').value);
+  const carb    = parseInt(document.getElementById('cg-carb').value);
+  const g = calcGoals(userProfile);
+  // Only store keys that differ from the recommendation (keep customGoals lean)
+  customGoals = {};
+  if(!isNaN(cal)     && cal     !== g.cal)     customGoals.cal     = cal;
+  if(!isNaN(protein) && protein !== g.protein) customGoals.protein = protein;
+  if(!isNaN(fat)     && fat     !== g.fat)     customGoals.fat     = fat;
+  if(!isNaN(carb)    && carb    !== g.carb)    customGoals.carb    = carb;
+  // Apply to live tracking goals
+  const a = activeGoals();
+  MACRO_GOALS.cal     = a.cal;
+  MACRO_GOALS.protein = a.protein;
+  MACRO_GOALS.fat     = a.fat;
+  MACRO_GOALS.carb    = a.carb;
+  proteinGoal = a.protein;
+  saveProfileLocal();
+  saveLocal();
+  renderProfilePage();
+  renderPlanner();
+  toast('✦ Goals saved!');
+}
+function resetCustomGoals(){
+  customGoals = {};
+  const g = calcGoals(userProfile);
+  MACRO_GOALS.cal     = g.cal;
+  MACRO_GOALS.protein = g.protein;
+  MACRO_GOALS.fat     = g.fat;
+  MACRO_GOALS.carb    = g.carb;
+  MACRO_GOALS.sugar   = g.sugar;
+  MACRO_GOALS.fiber   = g.fiber;
+  proteinGoal = g.protein;
+  saveProfileLocal();
+  saveLocal();
+  renderProfilePage();
+  renderPlanner();
+  toast('Goals reset to recommended values.');
 }
 function openProfile(){
   renderProfilePage();
@@ -534,8 +600,9 @@ function saveProfile(){
   const activity=parseFloat(document.getElementById('p-activity').value)||1.375;
   const ratePerWeek=parseInt(document.getElementById('p-rate').value)||1500;
   userProfile={age,heightIn,weightLbs,goalLbs,activity,ratePerWeek};
+  // Recalculate clears any custom overrides so fresh formula values apply
+  customGoals={};
   saveProfileLocal();
-  // recalculate and apply MACRO_GOALS
   const g=calcGoals(userProfile);
   MACRO_GOALS.cal=g.cal;
   MACRO_GOALS.protein=g.protein;
@@ -547,7 +614,7 @@ function saveProfile(){
   saveLocal();
   renderProfilePage();
   renderPlanner();
-  toast('✦ Goals updated!');
+  toast('✦ Goals recalculated!');
 }
 
 // ─── THEMES ────────────────────────────────────────────────────────────────
@@ -1634,8 +1701,8 @@ async function addFood(){
 async function init(){
   try{ const t=localStorage.getItem('vitalvortex_theme'); if(t) applyTheme(t); }catch(e){}
   loadProfile();
-  // apply saved profile goals on startup
-  const g=calcGoals(userProfile);
+  // apply active goals on startup (custom overrides if set, otherwise formula)
+  const g=activeGoals();
   MACRO_GOALS.cal=g.cal;MACRO_GOALS.protein=g.protein;MACRO_GOALS.fat=g.fat;MACRO_GOALS.carb=g.carb;MACRO_GOALS.sugar=g.sugar;MACRO_GOALS.fiber=g.fiber;
   proteinGoal=g.protein;
   loadLocal();
