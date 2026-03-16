@@ -291,7 +291,7 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
     <button class="nav-btn" onclick="showPage('tomorrow',this)">Tomorrow</button>
     <button class="nav-btn" onclick="showPage('history',this)">History</button>
     <button class="nav-btn" onclick="showPage('menu',this)">Menu</button>
-    <button class="nav-btn" onclick="showPage('add',this)">+ Food</button>
+
   </div>
 
   <!-- PLANNER -->
@@ -834,7 +834,7 @@ async function loadLogFromSheet(){
 
 async function savePlanToSheet(){
   setSyncStatus('syncing');
-  const blob = JSON.stringify({meals:state.meals, tomorrowMeals:state.tomorrowMeals, water:state.water});
+  const blob = JSON.stringify({meals:state.meals, tomorrowMeals:state.tomorrowMeals, water:state.water, confirmedMeals:state.confirmedMeals});
   const data = await apiFetch(API_URL, {method:'POST', body:JSON.stringify({action:'saveplan', blob})});
   if(data && data.ok){ setSyncStatus('synced'); return true; }
   setSyncStatus('error');
@@ -849,6 +849,12 @@ async function loadPlanFromSheet(){
     state.meals = p.meals||[[],[],[],[],[]];
     state.tomorrowMeals = p.tomorrowMeals||[[],[],[],[],[]];
     state.water = p.water||0;
+    if(p.confirmedMeals) state.confirmedMeals = p.confirmedMeals;
+    // also sync the per-key localStorage entries so renderPlanner stays consistent
+    state.confirmedMeals.forEach((confirmed, mi) => {
+      if(confirmed) localStorage.setItem(todayKey()+'-confirm-'+mi, '1');
+      else localStorage.removeItem(todayKey()+'-confirm-'+mi);
+    });
     return true;
   }
   return false;
@@ -940,8 +946,11 @@ function renderPlanner(){
     const macroRow = mf.length>0 ? `<div style="font-size:10px;color:var(--muted);font-weight:600;margin-top:2px;opacity:0.85">Fat:${Math.round(mt.fat)}g &middot; C:${Math.round(mt.carb)}g &middot; Fb:${Math.round(mt.fiber)}g &middot; Sg:${Math.round(mt.sugar)}g &middot; P:${Math.round(mt.protein)}g</div>` : '';
     const isConfirmed = state.confirmedMeals[mi];
     const hasItems = mf.length > 0;
-    const confirmBtn = hasItems && !isConfirmed ? `<button onclick="confirmMeal(${mi})" style="margin-top:8px;width:100%;padding:9px;border:1.5px solid rgba(0,221,68,0.4);border-radius:var(--radius-sm);background:rgba(0,221,68,0.08);color:#00DD44;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">✓ Confirm — stuck to this meal</button>` : '';
-    const cardOpacity = hasItems && !isConfirmed ? 'opacity:0.72' : '';
+    // only show confirm button if meal has items, not yet confirmed, AND not already confirmed today
+    const confirmKey = todayKey()+'-confirm-'+mi;
+    const confirmedToday = localStorage.getItem(confirmKey) === '1';
+    const confirmBtn = hasItems && !isConfirmed && !confirmedToday ? `<button onclick="confirmMeal(${mi})" style="margin-top:8px;width:100%;padding:9px;border:1.5px solid rgba(0,221,68,0.4);border-radius:var(--radius-sm);background:rgba(0,221,68,0.08);color:#00DD44;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">✓ Confirm — stuck to this meal</button>` : '';
+    const cardOpacity = hasItems && !isConfirmed && !confirmedToday ? 'opacity:0.72' : '';
     html+=`<div class="meal-card m${mi}" style="${cardOpacity};transition:opacity 0.3s"><div class="meal-header"><div class="meal-badge">${m.emoji}</div><div style="flex:1;margin-left:10px"><div class="meal-name">${m.name}</div>${macroRow}</div><div class="meal-cals">${Math.round(mc)} cal</div></div><div class="meal-body">${items||'<div style="font-size:12px;color:var(--muted);padding:6px 0">No foods added yet</div>'}${confirmBtn}<button class="add-food-btn" onclick="openPickerFor('today',${mi})">+ Add food</button></div></div>`;
   });
   html+='</div>';
@@ -1272,12 +1281,16 @@ function copyPlanToToday(){
   if(!confirm('Copy tomorrow\'s plan to today? This will replace today\'s current meals.'))return;
   state.meals=state.tomorrowMeals.map(m=>[...m]);
   state.confirmedMeals=[false,false,false,false,false];
+  // clear any persisted confirm keys so buttons reappear after plan copy
+  [0,1,2,3,4].forEach(i=>localStorage.removeItem(todayKey()+'-confirm-'+i));
   saveLocal();renderPlanner();savePlanToSheet();
   showPage('planner',document.querySelector('.nav-btn'));
   toast('✦ Plan copied to today!');
 }
 function confirmMeal(mi){
   state.confirmedMeals[mi]=true;
+  // persist confirmation keyed to today so it survives page reloads
+  localStorage.setItem(todayKey()+'-confirm-'+mi, '1');
   saveLocal();renderPlanner();
   toast('✦ '+MEALS[mi].name+' confirmed!');
 }

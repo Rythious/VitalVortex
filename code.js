@@ -2,7 +2,8 @@ function doGet(e) {
   if (!e.parameter.action) {
     return HtmlService.createHtmlOutputFromFile('Index')
       .setTitle('Vital Vortex')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0');
   }
   const result = handleRequest(e);
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.TEXT);
