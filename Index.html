@@ -869,8 +869,27 @@ async function loadPlanFromSheet(){
 }
 
 // ─── REST OF APP (unchanged) ───────────────────────────────────────────────
-function macroMult(f, fid){ return fid<0 ? 0.5 : 1; } // negative id = 0.5 serving
-function realId(fid){ return Math.abs(fid); }
+// Meal entries are stored as {id, qty, frac} objects.
+// frac is a decimal multiplier: 1=full, 0.75=3/4, 0.5=1/2, 0.333=1/3, 0.25=1/4
+// qty is how many of that entry (e.g. 3 eggs)
+// Legacy bare-integer entries (including negative-id half-servings) are migrated on load.
+const FRACS = [
+  {val:1,    label:'Full'},
+  {val:0.75, label:'¾'},
+  {val:0.5,  label:'½'},
+  {val:0.333,label:'⅓'},
+  {val:0.25, label:'¼'}
+];
+function normEntry(e){
+  // Accept either a legacy bare integer or a new {id,qty,frac} object
+  if(typeof e === 'number') return {id: Math.abs(e), qty:1, frac: e<0 ? 0.5 : 1};
+  return {id: e.id||e, qty: e.qty||1, frac: e.frac||1};
+}
+function entryMult(e){ const n=normEntry(e); return n.qty * n.frac; }
+function entryId(e){ return normEntry(e).id; }
+// Keep old names as thin wrappers so nothing else breaks
+function realId(e){ return entryId(e); }
+function macroMult(f, e){ return entryMult(e); }
 function computeTotals(){
   const t={cal:0,fat:0,carb:0,sugar:0,fiber:0,protein:0};
   state.meals.forEach(meal=>meal.forEach(fid=>{
@@ -936,21 +955,26 @@ function renderPlanner(){
   MEALS.forEach((m,mi)=>{
     const mf=state.meals[mi]||[];
     const mc=mf.reduce((s,fid)=>{const f=state.foods.find(x=>x.id===realId(fid));return s+(f?f.cal*macroMult(f,fid):0);},0);
-    // Group duplicate food IDs into counted rows
+    // Group entries by id+frac combo so "2x ½ chicken" shows as one row
     const grouped=[];
-    mf.forEach(fid=>{
+    mf.forEach(rawEntry=>{
+      const e=normEntry(rawEntry);
       const last=grouped[grouped.length-1];
-      if(last && last.fid===fid) last.count++;
-      else grouped.push({fid,count:1});
+      if(last && last.id===e.id && last.frac===e.frac) last.qty+=e.qty;
+      else grouped.push({id:e.id, qty:e.qty, frac:e.frac, raw:rawEntry});
     });
-    const items=grouped.map(({fid,count})=>{
-      const f=state.foods.find(x=>x.id===realId(fid));if(!f)return'';
-      const mult=macroMult(f,fid)*count;
-      const qtyLabel=count>1?`<span style="font-size:11px;background:var(--lavender);color:var(--vv-accent);font-weight:800;padding:1px 6px;border-radius:6px;margin-left:5px">${count}x</span>`:'';
-      return`<div class="food-item"><div style="flex:1"><div class="food-name">${f.name}${qtyLabel}</div><div class="food-portion">${f.portion} &middot; ${Math.round(f.cal*mult)} cal &middot; Fat:${Math.round(f.fat*mult*10)/10}g C:${Math.round(f.carb*mult*10)/10}g Fb:${Math.round(f.fiber*mult*10)/10}g Sg:${Math.round(f.sugar*mult*10)/10}g P:${Math.round(f.protein*mult*10)/10}g</div></div><button class="remove-btn" style="color:var(--vv-accent);font-size:16px" onclick="addAnotherServing(${mi},${fid})" title="Add another serving">+</button><button class="remove-btn" onclick="removeFoodGroup(${mi},${fid})" title="Remove all">&#215;</button></div>`;
+    const items=grouped.map(({id,qty,frac,raw})=>{
+      const f=state.foods.find(x=>x.id===id);if(!f)return'';
+      const mult=qty*frac;
+      const fracObj=FRACS.find(fr=>fr.val===frac);
+      const fracLabel=(frac<1&&fracObj)?fracObj.label:'';
+      const badges=[];
+      if(qty>1) badges.push(`<span style="font-size:11px;background:var(--lavender);color:var(--vv-accent);font-weight:800;padding:1px 6px;border-radius:6px;margin-left:5px">${qty}×</span>`);
+      if(fracLabel) badges.push(`<span style="font-size:11px;background:rgba(0,255,212,0.12);color:var(--mint-mid);font-weight:800;padding:1px 6px;border-radius:6px;margin-left:4px">${fracLabel} serving</span>`);
+      return`<div class="food-item"><div style="flex:1"><div class="food-name">${f.name}${badges.join('')}</div><div class="food-portion">${f.portion} &middot; ${Math.round(f.cal*mult)} cal &middot; Fat:${Math.round(f.fat*mult*10)/10}g C:${Math.round(f.carb*mult*10)/10}g Fb:${Math.round(f.fiber*mult*10)/10}g Sg:${Math.round(f.sugar*mult*10)/10}g P:${Math.round(f.protein*mult*10)/10}g</div></div><button class="remove-btn" style="color:var(--vv-accent);font-size:16px" onclick="addAnotherServing(${mi},${JSON.stringify(raw).replace(/"/g,'&quot;')})" title="Add another serving">+</button><button class="remove-btn" onclick="removeFoodGroup(${mi},'${id}','${frac}')" title="Remove all">&#215;</button></div>`;
     }).join('');
     const mt={cal:0,fat:0,carb:0,sugar:0,fiber:0,protein:0};
-    mf.forEach(fid=>{const f=state.foods.find(x=>x.id===realId(fid));const mult=macroMult(f,fid);if(f){mt.cal+=f.cal*mult;mt.fat+=f.fat*mult;mt.carb+=f.carb*mult;mt.sugar+=f.sugar*mult;mt.fiber+=f.fiber*mult;mt.protein+=f.protein*mult;}});
+    mf.forEach(rawEntry=>{const e=normEntry(rawEntry);const f=state.foods.find(x=>x.id===e.id);const mult=e.qty*e.frac;if(f){mt.cal+=f.cal*mult;mt.fat+=f.fat*mult;mt.carb+=f.carb*mult;mt.sugar+=f.sugar*mult;mt.fiber+=f.fiber*mult;mt.protein+=f.protein*mult;}});
     const macroRow = mf.length>0 ? `<div style="font-size:10px;color:var(--muted);font-weight:600;margin-top:2px;opacity:0.85">Fat:${Math.round(mt.fat)}g &middot; C:${Math.round(mt.carb)}g &middot; Fb:${Math.round(mt.fiber)}g &middot; Sg:${Math.round(mt.sugar)}g &middot; P:${Math.round(mt.protein)}g</div>` : '';
     const isConfirmed = state.confirmedMeals[mi];
     const hasItems = mf.length > 0;
@@ -1270,10 +1294,10 @@ function renderTomorrow(){
   html+='<div class="section-title">Meals</div><div class="meals-grid">';
   MEALS.forEach((m,mi)=>{
     const mf=state.tomorrowMeals[mi]||[];
-    const mc=mf.reduce((s,fid)=>{const f=state.foods.find(x=>x.id===fid);return s+(f?f.cal:0);},0);
-    const items=mf.map(fid=>{const f=state.foods.find(x=>x.id===fid);if(!f)return'';return`<div class="food-item"><div style="flex:1"><div class="food-name">${f.name}</div><div class="food-portion">${f.portion} &middot; ${f.cal} cal &middot; Fat:${f.fat}g C:${f.carb}g Fb:${f.fiber}g Sg:${f.sugar}g P:${f.protein}g</div></div><button class="remove-btn" onclick="removeTomorrowFood(${mi},${fid})">&#215;</button></div>`;}).join('');
+    const mc=mf.reduce((s,rawE)=>{const e=normEntry(rawE);const f=state.foods.find(x=>x.id===e.id);return s+(f?f.cal*e.qty*e.frac:0);},0);
+    const items=mf.map(rawE=>{const e=normEntry(rawE);const f=state.foods.find(x=>x.id===e.id);if(!f)return'';const mult=e.qty*e.frac;const fracObj=FRACS.find(fr=>Math.abs(fr.val-e.frac)<0.01);const fracBadge=(e.frac<1&&fracObj)?`<span style="font-size:11px;background:rgba(0,255,212,0.12);color:var(--mint-mid);font-weight:800;padding:1px 6px;border-radius:6px;margin-left:4px">${fracObj.label} serving</span>`:'';const qtyBadge=e.qty>1?`<span style="font-size:11px;background:var(--lavender);color:var(--vv-accent);font-weight:800;padding:1px 6px;border-radius:6px;margin-left:5px">${e.qty}×</span>`:'';const safeEntry=JSON.stringify(rawE).replace(/"/g,'&quot;');return`<div class="food-item"><div style="flex:1"><div class="food-name">${f.name}${qtyBadge}${fracBadge}</div><div class="food-portion">${f.portion} &middot; ${Math.round(f.cal*mult)} cal &middot; Fat:${Math.round(f.fat*mult*10)/10}g C:${Math.round(f.carb*mult*10)/10}g Fb:${Math.round(f.fiber*mult*10)/10}g Sg:${Math.round(f.sugar*mult*10)/10}g P:${Math.round(f.protein*mult*10)/10}g</div></div><button class="remove-btn" onclick="removeTomorrowFood(${mi},'${safeEntry}')">&#215;</button></div>`;}).join('');
     const tmt={cal:0,fat:0,carb:0,sugar:0,fiber:0,protein:0};
-    mf.forEach(fid=>{const f=state.foods.find(x=>x.id===fid);if(f){tmt.cal+=f.cal;tmt.fat+=f.fat;tmt.carb+=f.carb;tmt.sugar+=f.sugar;tmt.fiber+=f.fiber;tmt.protein+=f.protein;}});
+    mf.forEach(rawE=>{const e=normEntry(rawE);const f=state.foods.find(x=>x.id===e.id);const mult=e.qty*e.frac;if(f){tmt.cal+=f.cal*mult;tmt.fat+=f.fat*mult;tmt.carb+=f.carb*mult;tmt.sugar+=f.sugar*mult;tmt.fiber+=f.fiber*mult;tmt.protein+=f.protein*mult;}});
     const tMacroRow = mf.length>0 ? `<div style="font-size:10px;color:var(--muted);font-weight:600;margin-top:2px;opacity:0.85">Fat:${Math.round(tmt.fat)}g &middot; C:${Math.round(tmt.carb)}g &middot; Fb:${Math.round(tmt.fiber)}g &middot; Sg:${Math.round(tmt.sugar)}g &middot; P:${Math.round(tmt.protein)}g</div>` : '';
     html+=`<div class="meal-card m${mi}"><div class="meal-header"><div class="meal-badge">${m.emoji}</div><div style="flex:1;margin-left:10px"><div class="meal-name">${m.name}</div>${tMacroRow}</div><div class="meal-cals">${Math.round(mc)} cal</div></div><div class="meal-body">${items||'<div style="font-size:12px;color:var(--muted);padding:6px 0">No foods added yet</div>'}<button class="add-food-btn" onclick="openPickerFor(\'tomorrow\',${mi})">+ Add food</button></div></div>`;
   });
@@ -1281,7 +1305,16 @@ function renderTomorrow(){
   document.getElementById('tomorrowContent').innerHTML=html;
 }
 
-function removeTomorrowFood(mi,fid){const meal=state.tomorrowMeals[mi];const idx=meal.indexOf(fid);if(idx>-1)meal.splice(idx,1);saveLocal();renderTomorrow();savePlanToSheet();}
+function removeTomorrowFood(mi,rawEntry){
+  let entry=rawEntry;
+  if(typeof entry==='string'){try{entry=JSON.parse(entry);}catch(ex){entry={id:parseInt(rawEntry),qty:1,frac:1};}}
+  const n=normEntry(entry);
+  // remove the first matching entry (id+frac)
+  const meal=state.tomorrowMeals[mi];
+  const idx=meal.findIndex(e=>{const en=normEntry(e);return en.id===n.id&&Math.abs(en.frac-n.frac)<0.01;});
+  if(idx>-1)meal.splice(idx,1);
+  saveLocal();renderTomorrow();savePlanToSheet();
+}
 function clearTomorrow(){if(!confirm('Clear all foods from tomorrow\'s plan?'))return;state.tomorrowMeals=[[],[],[],[],[]];saveLocal();renderTomorrow();savePlanToSheet();toast('Tomorrow\'s plan cleared!');}
 function copyPlanToToday(){
   const hasPlan=state.tomorrowMeals.some(m=>m.length>0);
@@ -1379,7 +1412,8 @@ function openPickerFor(context,mi){
 function openPicker(mi){openPickerFor('today',mi);}
 let pickerSelectedId = null;
 function pickerItemHTML(f){
-  return `<div id="pitem-${f.id}"><div class="picker-item" id="pirow-${f.id}" onclick="selectPickerFood(${f.id})"><div><div class="picker-food-name">${f.name}</div><div class="picker-food-meta">${f.portion} &middot; ${f.cal} cal &middot; Fat:${f.fat}g C:${f.carb}g Fb:${f.fiber}g Sg:${f.sugar}g P:${f.protein}g</div></div><span style="color:var(--vv-accent);font-size:20px;font-weight:700;margin-left:8px" id="pplus-${f.id}">+</span></div><div class="picker-qty-row" id="pqty-${f.id}"><div class="picker-qty-controls"><button class="picker-qty-btn" onclick="changePickerQty(${f.id},-1)">−</button><div class="picker-qty-num" id="pqnum-${f.id}">1</div><button class="picker-qty-btn" onclick="changePickerQty(${f.id},1)">+</button></div><button class="picker-qty-add" onclick="confirmPickerFood(${f.id})">✦ Add to Meal</button></div></div>`;
+  const fracBtns = FRACS.map((fr,i)=>`<button id="pfrac-${f.id}-${i}" onclick="setPickerFrac(${f.id},${i})" style="flex:1;padding:7px 2px;border:1px solid var(--lav-mid);border-radius:var(--radius-sm);background:${i===0?'var(--vv-accent)':'transparent'};color:${i===0?'#fff':'var(--lav-dark)'};font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">${fr.label}</button>`).join('');
+  return `<div id="pitem-${f.id}"><div class="picker-item" id="pirow-${f.id}" onclick="selectPickerFood(${f.id})"><div><div class="picker-food-name">${f.name}</div><div class="picker-food-meta">${f.portion} &middot; ${f.cal} cal &middot; Fat:${f.fat}g C:${f.carb}g Fb:${f.fiber}g Sg:${f.sugar}g P:${f.protein}g</div></div><span style="color:var(--vv-accent);font-size:20px;font-weight:700;margin-left:8px" id="pplus-${f.id}">+</span></div><div class="picker-qty-row" id="pqty-${f.id}"><div style="display:flex;flex-direction:column;gap:8px;width:100%"><div style="display:flex;align-items:center;gap:8px"><div style="font-size:11px;font-weight:700;color:var(--lav-dark);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap">Qty</div><div class="picker-qty-controls"><button class="picker-qty-btn" onclick="changePickerQty(${f.id},-1)">−</button><div class="picker-qty-num" id="pqnum-${f.id}">1</div><button class="picker-qty-btn" onclick="changePickerQty(${f.id},1)">+</button></div><button class="picker-qty-add" onclick="confirmPickerFood(${f.id})">✦ Add to Meal</button></div><div style="display:flex;align-items:center;gap:6px"><div style="font-size:11px;font-weight:700;color:var(--lav-dark);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap">Portion</div><div style="display:flex;gap:4px;flex:1">${fracBtns}</div></div></div></div></div>`;
 }
 function selectPickerFood(id){
   // collapse previously selected
@@ -1402,14 +1436,26 @@ function selectPickerFood(id){
     if(plusBtn) plusBtn.textContent = '+';
     pickerSelectedId = null;
   } else {
-    // reset qty to 1
+    // reset qty to 1 and portion to Full
     const num = document.getElementById('pqnum-'+id);
     if(num) num.textContent = '1';
+    pickerFracIdx = 0;
+    setPickerFrac(id, 0);
     if(qtyRow) qtyRow.classList.add('open');
     if(itemRow) itemRow.classList.add('expanded');
     if(plusBtn) plusBtn.textContent = '×';
     pickerSelectedId = id;
   }
+}
+let pickerFracIdx = 0; // index into FRACS array
+function setPickerFrac(foodId, fracIdx){
+  pickerFracIdx = fracIdx;
+  FRACS.forEach((_,i)=>{
+    const btn = document.getElementById('pfrac-'+foodId+'-'+i);
+    if(!btn) return;
+    btn.style.background = i===fracIdx ? 'var(--vv-accent)' : 'transparent';
+    btn.style.color = i===fracIdx ? '#fff' : 'var(--lav-dark)';
+  });
 }
 function changePickerQty(id, delta){
   const num = document.getElementById('pqnum-'+id);
@@ -1421,8 +1467,9 @@ function changePickerQty(id, delta){
 function confirmPickerFood(id){
   const num = document.getElementById('pqnum-'+id);
   const qty = num ? parseInt(num.textContent) || 1 : 1;
+  const frac = FRACS[pickerFracIdx] ? FRACS[pickerFracIdx].val : 1;
   pickerSelectedId = null;
-  for(let i = 0; i < qty; i++) pickFood(id);
+  pickFood(id, qty, frac);
 }
 function renderPickerItems(){
   const q=document.getElementById('pickerSearch').value.toLowerCase();
@@ -1499,40 +1546,55 @@ async function savePickerAddFood(){
   closePicker();
   toast('✦ '+food.name+' added!');
 }
-function pickFood(id){
+function pickFood(id, qty=1, frac=1){
   if(state.activeMeal===null||state.activeMeal===undefined)return;
   const isTomorrow=state.pickerContext==='tomorrow';
   const target=isTomorrow?state.tomorrowMeals:state.meals;
   if(!target[state.activeMeal])target[state.activeMeal]=[];
-  target[state.activeMeal].push(id);
+  const entry = (qty===1 && frac===1) ? {id,qty:1,frac:1} : {id,qty,frac};
+  target[state.activeMeal].push(entry);
   trackRecent(id, state.activeMeal);
   saveLocal();closePicker();
   if(isTomorrow)renderTomorrow();else renderPlanner();
   savePlanToSheet();
   const f=state.foods.find(x=>x.id===id);
-  if(f)toast('✦ '+f.name+' added!');
+  const fracLabel = FRACS.find(fr=>fr.val===frac);
+  const qtyStr = qty>1 ? qty+'× ' : '';
+  const fracStr = frac<1 && fracLabel ? fracLabel.label+' ' : '';
+  if(f)toast('✦ '+qtyStr+fracStr+f.name+' added!');
   if(!isTomorrow&&computeTotals().protein>=proteinGoal){setTimeout(launchMeteorShower,300);}
 }
-function addAnotherServing(mi, fid){
-  // add the same food again to the same meal — simple way to add multiple servings
+function addAnotherServing(mi, rawEntry){
+  // Add one more of the same entry (same food, same fraction) to the meal
   const isTomorrow = (document.getElementById('page-tomorrow').classList.contains('active'));
   const target = isTomorrow ? state.tomorrowMeals : state.meals;
-  target[mi].push(fid);
+  // rawEntry may arrive as a JSON string from the HTML attribute
+  let entry = rawEntry;
+  if(typeof entry === 'string'){ try{ entry=JSON.parse(entry); }catch(e){ entry={id:parseInt(rawEntry),qty:1,frac:1}; } }
+  const n = normEntry(entry);
+  target[mi].push({id:n.id, qty:1, frac:n.frac});
   saveLocal();
   if(isTomorrow)renderTomorrow();else renderPlanner();
   savePlanToSheet();
-  const f=state.foods.find(x=>x.id===realId(fid));
-  if(f)toast('✦ +1 '+f.name+'!');
+  const f=state.foods.find(x=>x.id===n.id);
+  const fracObj=FRACS.find(fr=>Math.abs(fr.val-n.frac)<0.01);
+  const fracStr=n.frac<1&&fracObj?' ('+fracObj.label+')+':'';
+  if(f)toast('✦ +1'+fracStr+' '+f.name+'!');
 }
-function closePicker(){document.getElementById('foodPicker').style.display='none';pickerSelectedId=null;}
+function closePicker(){document.getElementById('foodPicker').style.display='none';pickerSelectedId=null;pickerFracIdx=0;}
 function removeFood(mi,fid){const meal=state.meals[mi];const idx=meal.indexOf(fid);if(idx>-1)meal.splice(idx,1);saveLocal();renderPlanner();savePlanToSheet();}
-function removeFoodGroup(mi,fid){state.meals[mi]=state.meals[mi].filter(x=>x!==fid);saveLocal();renderPlanner();savePlanToSheet();}
+function removeFoodGroup(mi,id,frac){
+  // Remove all entries in this meal that match the given food id and fraction
+  const targetId=parseInt(id); const targetFrac=parseFloat(frac);
+  state.meals[mi]=state.meals[mi].filter(e=>{ const n=normEntry(e); return !(n.id===targetId && Math.abs(n.frac-targetFrac)<0.01); });
+  saveLocal();renderPlanner();savePlanToSheet();
+}
 
 async function deleteFood(id){
   if(!confirm('Remove this food from your menu?'))return;
   state.foods=state.foods.filter(f=>f.id!==id);
-  state.meals=state.meals.map(m=>m.filter(fid=>fid!==id));
-  state.tomorrowMeals=state.tomorrowMeals.map(m=>m.filter(fid=>fid!==id));
+  state.meals=state.meals.map(m=>m.filter(e=>entryId(e)!==id));
+  state.tomorrowMeals=state.tomorrowMeals.map(m=>m.filter(e=>entryId(e)!==id));
   saveLocal();renderMenu();await saveFoodsToSheet();await savePlanToSheet();toast('Food removed.');
 }
 
