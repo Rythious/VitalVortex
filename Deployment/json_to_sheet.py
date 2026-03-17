@@ -147,6 +147,27 @@ def ensure_sheet(sheets_service, spreadsheet_id, sheet_name):
     print(f"  ✓ Sheet '{sheet_name}' created.")
 
 
+def set_column_plain_text(sheets_service, spreadsheet_id, sheet_name):
+    """Format column A of a sheet as plain text so Google Sheets never auto-converts dates."""
+    meta = sheets_service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
+    sheet_id = next(
+        (s["properties"]["sheetId"] for s in meta.get("sheets", [])
+         if s["properties"]["title"] == sheet_name), None
+    )
+    if sheet_id is None:
+        return
+    sheets_service.spreadsheets().batchUpdate(
+        spreadsheetId=spreadsheet_id,
+        body={"requests": [{
+            "repeatCell": {
+                "range": {"sheetId": sheet_id, "startColumnIndex": 0, "endColumnIndex": 1},
+                "cell": {"userEnteredFormat": {"numberFormat": {"type": "TEXT"}}},
+                "fields": "userEnteredFormat.numberFormat"
+            }
+        }]}
+    ).execute()
+
+
 def clear_and_write(sheets_service, spreadsheet_id, sheet_name, rows):
     print(f"  Clearing '{sheet_name}' …")
     sheets_service.spreadsheets().values().clear(
@@ -226,6 +247,9 @@ def main():
         # ── Daily Log sheet ───────────────────────────────────────────────────
         print("\n[3/3] Writing Daily Log sheet …")
         ensure_sheet(sheets_service, spreadsheet_id, "Daily Log")
+        # Force column A to plain text BEFORE writing so Google Sheets
+        # never auto-converts YYYY-MM-DD date strings into date values.
+        set_column_plain_text(sheets_service, spreadsheet_id, "Daily Log")
         log_headers = ["date", "cal", "fat", "carb", "sugar", "fiber", "protein", "water"]
         log_rows = [log_headers] + [
             [date,
