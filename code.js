@@ -57,9 +57,22 @@ function handleRequest(e) {
 
   if (action === 'log') {
     let sheet = ss.getSheetByName('Daily Log');
-    if (!sheet) { sheet = ss.insertSheet('Daily Log'); sheet.appendRow(['date','cal','fat','carb','sugar','fiber','protein','water']); }
+    if (!sheet) {
+      sheet = ss.insertSheet('Daily Log');
+      sheet.appendRow(['date','cal','fat','carb','sugar','fiber','protein','water']);
+    }
+    // Force column A to plain text so Google Sheets never auto-converts dates.
+    sheet.getRange('A:A').setNumberFormat('@');
     const data = sheet.getDataRange().getValues();
-    const existing = data.findIndex(r => r[0] === body.date);
+    // Normalize each row's date key the same way readlog does, so the findIndex match works
+    // even for any old rows that were stored as Date objects before this fix.
+    const existing = data.findIndex(r => {
+      if (!r[0]) return false;
+      const k = r[0] instanceof Date
+        ? r[0].getFullYear() + '-' + String(r[0].getMonth()+1).padStart(2,'0') + '-' + String(r[0].getDate()).padStart(2,'0')
+        : String(r[0]).trim();
+      return k === body.date;
+    });
     const row = [body.date, body.entry.cal, body.entry.fat, body.entry.carb, body.entry.sugar, body.entry.fiber, body.entry.protein, body.entry.water];
     if (existing > 0) sheet.getRange(existing+1,1,1,8).setValues([row]);
     else sheet.appendRow(row);
