@@ -104,6 +104,30 @@ def get_spreadsheet_id(script_service, script_id):
     return parent_id
 
 
+def normalize_date(date_str):
+    """
+    Convert any common date format into YYYY-MM-DD.
+    Handles:  2026-03-15  (already correct — pass through)
+              3/15/2026   (Google Sheets US format)
+              3/15/26     (short year)
+    Returns the original string unchanged if it can't be parsed.
+    """
+    s = str(date_str).strip()
+    # Already in YYYY-MM-DD format
+    if len(s) == 10 and s[4] == '-' and s[7] == '-':
+        return s
+    # M/D/YYYY or M/D/YY (Google Sheets default)
+    if '/' in s:
+        parts = s.split('/')
+        if len(parts) == 3:
+            m, d, y = parts
+            y = y.strip()
+            if len(y) == 2:
+                y = '20' + y   # assume 2000s
+            return f"{int(y):04d}-{int(m):02d}-{int(d):02d}"
+    return s   # unrecognized — return as-is
+
+
 def read_sheet(sheets_service, spreadsheet_id, sheet_name):
     """Return all values from a sheet as a list of lists, or [] if the sheet doesn't exist."""
     try:
@@ -174,6 +198,7 @@ def main():
             date   = obj.pop("date", None)
             if not date:
                 continue
+            date = normalize_date(date)
             for num_field in ["cal", "fat", "carb", "sugar", "fiber", "protein", "water"]:
                 try:
                     obj[num_field] = float(obj[num_field]) if "." in str(obj[num_field]) else int(obj[num_field])

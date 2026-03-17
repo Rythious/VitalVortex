@@ -71,7 +71,31 @@ function handleRequest(e) {
     if (!sheet) return out({ok:true, log:{}});
     const data = sheet.getDataRange().getValues();
     const log = {};
-    data.slice(1).forEach(r => { if(r[0]) log[r[0]] = {cal:r[1],fat:r[2],carb:r[3],sugar:r[4],fiber:r[5],protein:r[6],water:r[7]}; });
+    data.slice(1).forEach(r => {
+      if (!r[0]) return;
+      // r[0] may be a Date object if Google Sheets auto-converted the column.
+      // Normalize it to YYYY-MM-DD regardless of how it's stored.
+      let dateKey;
+      if (r[0] instanceof Date) {
+        const y = r[0].getFullYear();
+        const m = String(r[0].getMonth() + 1).padStart(2, '0');
+        const d = String(r[0].getDate()).padStart(2, '0');
+        dateKey = y + '-' + m + '-' + d;
+      } else {
+        // Already a string — normalize M/D/YYYY → YYYY-MM-DD just in case
+        const s = String(r[0]).trim();
+        if (s.includes('/')) {
+          const parts = s.split('/');
+          const mo = parts[0].padStart(2,'0');
+          const dy = parts[1].padStart(2,'0');
+          const yr = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+          dateKey = yr + '-' + mo + '-' + dy;
+        } else {
+          dateKey = s;
+        }
+      }
+      log[dateKey] = {cal:r[1], fat:r[2], carb:r[3], sugar:r[4], fiber:r[5], protein:r[6], water:r[7]};
+    });
     return out({ok:true, log});
   }
 
