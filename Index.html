@@ -1102,7 +1102,7 @@ function getFullMoonDates(year, month){
   return results;
 }
 function fullMoonSVG(){
-  return `<svg viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" style="position:absolute;top:-20px;left:50%;transform:translateX(-50%);width:36px;height:36px;pointer-events:none;z-index:10">
+  return `<svg viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0">
     <defs>
       <radialGradient id="mH" cx="40%" cy="38%" r="62%">
         <stop offset="0%" stop-color="#FFFFFF"/>
@@ -1288,11 +1288,21 @@ function renderCalendar(){
     const txt=el.textContent.trim();
     const dayNum=parseInt(txt);
     if(!isNaN(dayNum)&&fullMoonDays.has(dayNum)){
-      el.style.marginTop='20px';
-      el.style.overflow='visible';
+      el.style.overflow='hidden';
+      // render moon as background behind the date number
       const wrapper=document.createElement('div');
       wrapper.innerHTML=fullMoonSVG();
       el.insertBefore(wrapper.firstChild,el.firstChild);
+      // make the date text sit on top with a contrasting dark color
+      const textNodes=[...el.childNodes].filter(n=>n.nodeType===3||n.tagName==='DIV'&&!n.querySelector('svg'));
+      textNodes.forEach(n=>{
+        if(n.nodeType===3&&n.textContent.trim()){
+          const span=document.createElement('span');
+          span.textContent=n.textContent;
+          span.style.cssText='position:relative;z-index:2;color:#003322;font-weight:800;';
+          n.parentNode.replaceChild(span,n);
+        }
+      });
     }
   });
   if(selectedLogDate&&dailyLog[selectedLogDate]){
