@@ -1348,7 +1348,7 @@ function renderTomorrow(){
   const tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);
   const tLabel=tomorrow.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
   const totals={cal:0,fat:0,carb:0,sugar:0,fiber:0,protein:0};
-  state.tomorrowMeals.forEach(meal=>meal.forEach(fid=>{const f=state.foods.find(x=>x.id===fid);if(f){totals.cal+=f.cal;totals.fat+=f.fat;totals.carb+=f.carb;totals.sugar+=f.sugar;totals.fiber+=f.fiber;totals.protein+=f.protein;}}));
+  state.tomorrowMeals.forEach(meal=>meal.forEach(rawE=>{const e=normEntry(rawE);const f=state.foods.find(x=>x.id===e.id);const mult=e.qty*e.frac;if(f){totals.cal+=f.cal*mult;totals.fat+=f.fat*mult;totals.carb+=f.carb*mult;totals.sugar+=f.sugar*mult;totals.fiber+=f.fiber*mult;totals.protein+=f.protein*mult;}}));
   let html='';
   html+=`<div style="background:var(--mint);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px"><div style="font-size:20px">🌙</div><div><div style="font-size:12px;font-weight:700;color:var(--mint-dark);text-transform:uppercase;letter-spacing:.5px">Prepping for</div><div style="font-size:14px;font-weight:700;color:var(--mint-dark)">${tLabel}</div></div></div>`;
   html+='<div class="section-title">Projected Totals</div><div class="daily-totals">';
