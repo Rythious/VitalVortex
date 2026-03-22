@@ -326,6 +326,10 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
       <button class="cal-nav-btn" onclick="changeMonth(1)">&#8594;</button>
     </div>
     <div class="cal-grid" id="calGrid"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="font-size:11px;font-weight:700;color:#FF80CC;text-transform:uppercase;letter-spacing:.5px">🌸 Period Tracker</div>
+      <button onclick="togglePeriodDate(todayKey())" style="background:rgba(255,45,155,0.15);border:1px solid rgba(255,45,155,0.4);color:#FF80CC;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;padding:5px 12px;border-radius:20px;cursor:pointer">+ Mark today as period start</button>
+    </div>
     <div id="logDetail"></div>
   </div>
 
@@ -773,6 +777,7 @@ let proteinGoal = 100;
 let waterCelebrated = false;
 let editingId = null;
 let dailyLog = {};
+let periodDates = {};
 let calViewDate = new Date();
 let selectedLogDate = null;
 let midnightTimer = null;
@@ -830,6 +835,43 @@ function saveLocal(){
 }
 function saveLogLocal(){
   try{localStorage.setItem('vitalvortex_log',JSON.stringify(dailyLog));}catch(e){}
+}
+function savePeriodLocal(){
+  try{localStorage.setItem('vitalvortex_periods',JSON.stringify(periodDates));}catch(e){}
+}
+function loadPeriodLocal(){
+  try{const p=localStorage.getItem('vitalvortex_periods');if(p)periodDates=JSON.parse(p);}catch(e){}
+}
+async function savePeriodToSheet(dateKey,val){
+  await apiFetch(API_URL,{method:'POST',body:JSON.stringify({action:'log',date:'period_'+dateKey,entry:val?{period:1}:null})});
+}
+async function loadPeriodsFromSheet(){
+  const data=await apiFetch(API_URL+'?action=readlog');
+  if(data&&data.ok&&data.log){
+    periodDates={};
+    Object.keys(data.log).forEach(k=>{
+      if(k.startsWith('period_')){
+        const dateKey=k.replace('period_','');
+        periodDates[dateKey]=true;
+      }
+    });
+    savePeriodLocal();
+  }
+}
+function togglePeriodDate(key){
+  if(periodDates[key]){
+    if(!confirm('Remove period start marker for this date?'))return;
+    delete periodDates[key];
+    savePeriodLocal();
+    savePeriodToSheet(key,false);
+  } else {
+    periodDates[key]=true;
+    savePeriodLocal();
+    savePeriodToSheet(key,true);
+  }
+  renderCalendar();
+  renderWeekSummary();
+  toast(periodDates[key]?'✦ Period start marked!':'Period marker removed.');
 }
 
 // ─── API CALLS ───────────────────────────────────────────────────────────────────
@@ -1101,6 +1143,28 @@ function getFullMoonDates(year, month){
   }
   return results;
 }
+function periodSVG(){
+  return `<svg viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0">
+    <defs>
+      <radialGradient id="pgFill" cx="42%" cy="32%" r="68%">
+        <stop offset="0%" stop-color="#FF80CC"/>
+        <stop offset="50%" stop-color="#FF2D9B"/>
+        <stop offset="100%" stop-color="#9C27B0"/>
+      </radialGradient>
+      <radialGradient id="pgAura" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#FF2D9B" stop-opacity="0.18"/>
+        <stop offset="100%" stop-color="transparent" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <circle cx="22" cy="22" r="21" fill="url(#pgAura)"/>
+    <circle cx="22" cy="22" r="19" fill="none" stroke="url(#pgFill)" stroke-width="2.2"/>
+    <path d="M22 7 C23 9,26 12,28 16 C30 20,31 23,31 26 C31 31,27 35,22 35 C17 35,13 31,13 26 C13 23,14 20,16 16 C18 12,21 9,22 7 Z" fill="url(#pgFill)"/>
+    <circle cx="22" cy="26" r="6" fill="none" stroke="#FFCCE8" stroke-width="1.4" opacity="0.9"/>
+    <line x1="22" y1="32" x2="22" y2="37" stroke="#FFCCE8" stroke-width="1.4" stroke-linecap="round" opacity="0.9"/>
+    <line x1="18.5" y1="34.5" x2="25.5" y2="34.5" stroke="#FFCCE8" stroke-width="1.4" stroke-linecap="round" opacity="0.9"/>
+  </svg>`;
+}
+
 function fullMoonSVG(){
   return `<svg viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0">
     <defs>
@@ -1282,27 +1346,35 @@ function renderCalendar(){
     html+=`<div class="${cls}" ${onclick?'onclick="'+onclick+'"':''}>${d}${hasLog?'<div class="cal-dot"></div>':''}</div>`;
   }
   document.getElementById('calGrid').innerHTML=html;
-  // inject moon SVGs after render
+  // inject moon and period SVGs after render
   const fullMoonDays=new Set(getFullMoonDates(year,month));
   document.querySelectorAll('#calGrid .cal-day').forEach(el=>{
     const txt=el.textContent.trim();
     const dayNum=parseInt(txt);
-    if(!isNaN(dayNum)&&fullMoonDays.has(dayNum)){
+    if(isNaN(dayNum)) return;
+    const key=year+'-'+String(month+1).padStart(2,'0')+'-'+String(dayNum).padStart(2,'0');
+    const isMoon=fullMoonDays.has(dayNum);
+    const isPeriod=!!periodDates[key];
+    const svgHTML=isPeriod?periodSVG():(isMoon?fullMoonSVG():null);
+    if(svgHTML){
       el.style.overflow='hidden';
-      // render moon as background behind the date number
       const wrapper=document.createElement('div');
-      wrapper.innerHTML=fullMoonSVG();
+      wrapper.innerHTML=svgHTML;
       el.insertBefore(wrapper.firstChild,el.firstChild);
-      // make the date text sit on top with a contrasting dark color
+      const textColor=isPeriod?'#4a003a':'#003322';
       const textNodes=[...el.childNodes].filter(n=>n.nodeType===3||n.tagName==='DIV'&&!n.querySelector('svg'));
       textNodes.forEach(n=>{
         if(n.nodeType===3&&n.textContent.trim()){
           const span=document.createElement('span');
           span.textContent=n.textContent;
-          span.style.cssText='position:relative;z-index:2;color:#003322;font-weight:800;';
+          span.style.cssText='position:relative;z-index:2;color:'+textColor+';font-weight:800;';
           n.parentNode.replaceChild(span,n);
         }
       });
+    }
+    // period days get a click handler to toggle even without a log entry
+    if(isPeriod&&!el.onclick){
+      el.style.cursor='pointer';
     }
   });
   if(selectedLogDate&&dailyLog[selectedLogDate]){
@@ -1842,6 +1914,7 @@ async function init(){
   MACRO_GOALS.cal=g.cal;MACRO_GOALS.protein=g.protein;MACRO_GOALS.fat=g.fat;MACRO_GOALS.carb=g.carb;MACRO_GOALS.sugar=g.sugar;MACRO_GOALS.fiber=g.fiber;
   proteinGoal=g.protein;
   loadLocal();
+  loadPeriodLocal();
   renderPlanner();
   const hasData = await loadFoodsFromSheet();
   if(!hasData){
@@ -1856,6 +1929,7 @@ async function init(){
   seedRecentsFromPlan();
   renderPlanner();
   await loadLogFromSheet();
+  await loadPeriodsFromSheet();
 }
 
 function seedRecentsFromPlan(){
