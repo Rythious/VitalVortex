@@ -326,7 +326,7 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
       <button class="cal-nav-btn" onclick="changeMonth(1)">&#8594;</button>
     </div>
     <div class="cal-grid" id="calGrid"></div>
-    <div id="logDetail"><div class="no-log-msg">Tap a highlighted date to view that day's summary.</div></div>
+    <div id="logDetail"></div>
   </div>
 
   <!-- MENU -->
@@ -992,7 +992,7 @@ function showPage(id,btn){
   if(id==='planner')renderPlanner();
   if(id==='tomorrow')renderTomorrow();
   if(id==='menu'){editingId=null;renderMenu();}
-  if(id==='history')renderCalendar();
+  if(id==='history'){renderCalendar();renderWeekSummary();}
 }
 
 function renderPlanner(){
@@ -1134,6 +1134,84 @@ function fullMoonSVG(){
   </svg>`;
 }
 
+function renderWeekSummary(){
+  // Always render the rolling past-7-days summary below the calendar
+  const today=new Date();
+  const days=[];
+  for(let i=0;i<7;i++){
+    const d=new Date(today);
+    d.setDate(today.getDate()-i);
+    const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    days.push({key:k,date:d});
+  }
+  const rangeStart=days[days.length-1].date.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  const rangeEnd=days[0].date.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  let html=`<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px">${rangeStart} – ${rangeEnd}</div>`;
+  days.forEach(({key:k,date:d})=>{
+    const entry=dailyLog[k];
+    const isToday=k===todayKey();
+    const label=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    const borderStyle=isToday?'border:1.5px solid var(--vv-accent)':'border:1px solid var(--border)';
+    html+=`<div class="log-detail" style="${borderStyle};margin-bottom:8px">`;
+    html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${entry?'10px':'0'}">`;
+    html+=`<div class="log-detail-date" style="margin-bottom:0;${isToday?'color:var(--vv-accent)':''}">${
+      label}${isToday?' <span style="font-size:10px;font-weight:700;background:var(--lavender);color:var(--lav-dark);padding:2px 7px;border-radius:10px;margin-left:4px">today</span>':''}</div>`;
+    if(entry) html+=`<button class="log-edit-btn" style="margin-top:0;width:auto;padding:3px 10px;font-size:11px" onclick="editWeekDay('${k}')">✏ Edit</button>`;
+    html+='</div>';
+    if(entry){
+      html+='<div class="log-macros">';
+      MACROS.forEach(m=>{
+        const goal=m.k==='protein'?proteinGoal:MACRO_GOALS[m.k];
+        const val=entry[m.k]||0;
+        html+=`<div class="macro-card ${m.cls}"><div class="macro-val">${val}</div><div class="macro-goal-lbl">/ ${goal}</div><div class="macro-lbl">${m.lbl}</div></div>`;
+      });
+      html+='</div>';
+      html+=`<div class="log-water">💧 Water: ${entry.water||0} / 80 oz</div>`;
+    } else {
+      html+=`<div style="font-size:12px;color:var(--muted);padding:4px 0">No data logged</div>`;
+    }
+    html+='</div>';
+  });
+  document.getElementById('logDetail').innerHTML=html;
+}
+
+function editWeekDay(editKey){
+  // Inline edit for a specific day in the week summary
+  const entry=dailyLog[editKey]||{};
+  const d=new Date(editKey+'T12:00:00');
+  const label=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  let editHTML=`<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px">Editing — ${label}</div>`;
+  editHTML+=`<div class="log-detail" style="border:1.5px solid var(--vv-accent);margin-bottom:8px">`;
+  editHTML+=`<div class="log-detail-date" style="margin-bottom:10px">${label}</div>`;
+  editHTML+='<div class="log-edit-grid">';
+  MACROS.forEach(m=>{
+    editHTML+=`<div class="log-edit-group"><div class="log-edit-label">${m.lbl}</div><input class="log-edit-input" id="we-${m.k}" type="number" min="0" value="${entry[m.k]||0}"></div>`;
+  });
+  editHTML+=`<div class="log-edit-group"><div class="log-edit-label">💧 Water (oz)</div><input class="log-edit-input" id="we-water" type="number" min="0" value="${entry.water||0}"></div>`;
+  editHTML+='</div>';
+  editHTML+=`<div class="log-edit-actions"><button class="log-save-btn" onclick="saveWeekEdit('${editKey}')">✦ Save</button><button class="log-cancel-btn" onclick="renderWeekSummary()">Cancel</button></div>`;
+  editHTML+='</div>';
+  document.getElementById('logDetail').innerHTML=editHTML;
+}
+
+async function saveWeekEdit(editedKey){
+  const entry={
+    cal:parseFloat(document.getElementById('we-cal').value)||0,
+    fat:parseFloat(document.getElementById('we-fat').value)||0,
+    carb:parseFloat(document.getElementById('we-carb').value)||0,
+    sugar:parseFloat(document.getElementById('we-sugar').value)||0,
+    fiber:parseFloat(document.getElementById('we-fiber').value)||0,
+    protein:parseFloat(document.getElementById('we-protein').value)||0,
+    water:parseFloat(document.getElementById('we-water').value)||0
+  };
+  dailyLog[editedKey]=entry;
+  saveLogLocal();
+  toast('Saving...');
+  await saveLogToSheet(editedKey,entry);
+  renderWeekSummary();
+  toast('✦ Log updated!');
+}
+
 function renderCalendar(){
   const year=calViewDate.getFullYear();
   const month=calViewDate.getMonth();
@@ -1153,7 +1231,7 @@ function renderCalendar(){
     if(hasLog)cls+=' has-log';
     if(isToday)cls+=' today';
     if(isSelected)cls+=' selected';
-    const onclick=hasLog?`selectLogDate('${key}')`:'';
+    const onclick=hasLog?`selectLogDate('${key}')`:'';  
     html+=`<div class="${cls}" ${onclick?'onclick="'+onclick+'"':''}>${d}${hasLog?'<div class="cal-dot"></div>':''}</div>`;
   }
   document.getElementById('calGrid').innerHTML=html;
@@ -1178,7 +1256,8 @@ function renderCalendar(){
 function selectLogDate(key){
   selectedLogDate=key;
   renderCalendar();
-  renderLogDetail(key,false);
+  // scrolling to the week summary below
+  setTimeout(()=>{ const el=document.getElementById('logDetail'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); }, 100);
 }
 
 function renderLogDetail(key, editMode=false, editKey=null){
@@ -1250,7 +1329,7 @@ function changeMonth(dir){
   calViewDate=new Date(calViewDate.getFullYear(),calViewDate.getMonth()+dir,1);
   selectedLogDate=null;
   renderCalendar();
-  document.getElementById('logDetail').innerHTML='<div class="no-log-msg">Tap a highlighted date to view that day\'s summary.</div>';
+  renderWeekSummary();
 }
 
 function cupSVG(filled){
