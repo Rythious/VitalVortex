@@ -1156,7 +1156,10 @@ function renderWeekSummary(){
     html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${entry?'10px':'0'}">`;
     html+=`<div class="log-detail-date" style="margin-bottom:0;${isToday?'color:var(--vv-accent)':''}">${
       label}${isToday?' <span style="font-size:10px;font-weight:700;background:var(--lavender);color:var(--lav-dark);padding:2px 7px;border-radius:10px;margin-left:4px">today</span>':''}</div>`;
-    if(entry) html+=`<button class="log-edit-btn" style="margin-top:0;width:auto;padding:3px 10px;font-size:11px" onclick="editWeekDay('${k}')">✏ Edit</button>`;
+    if(entry) html+=`<div style="display:flex;gap:6px">
+      <button class="log-edit-btn" style="margin-top:0;width:auto;padding:3px 10px;font-size:11px" onclick="editWeekDay('${k}')">✏ Edit</button>
+      <button class="log-edit-btn" style="margin-top:0;width:auto;padding:3px 10px;font-size:11px;background:var(--mint);color:var(--mint-dark);border-color:rgba(0,255,212,0.3)" onclick="moveWeekDay('${k}')">📅 Move</button>
+    </div>`;
     html+='</div>';
     if(entry){
       html+='<div class="log-macros">';
@@ -1192,6 +1195,50 @@ function editWeekDay(editKey){
   editHTML+=`<div class="log-edit-actions"><button class="log-save-btn" onclick="saveWeekEdit('${editKey}')">✦ Save</button><button class="log-cancel-btn" onclick="renderWeekSummary()">Cancel</button></div>`;
   editHTML+='</div>';
   document.getElementById('logDetail').innerHTML=editHTML;
+}
+
+function moveWeekDay(fromKey){
+  // Show a date-picker panel to move this log entry to a different date
+  const entry=dailyLog[fromKey];
+  if(!entry) return;
+  const d=new Date(fromKey+'T12:00:00');
+  const label=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  // Default the target date to the day before
+  const prev=new Date(d); prev.setDate(d.getDate()-1);
+  const prevKey=prev.getFullYear()+'-'+String(prev.getMonth()+1).padStart(2,'0')+'-'+String(prev.getDate()).padStart(2,'0');
+  let moveHTML=`<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px">Move Entry — ${label}</div>`;
+  moveHTML+=`<div class="log-detail" style="border:1.5px solid var(--mint-mid);margin-bottom:8px">`;
+  moveHTML+=`<div class="log-detail-date" style="margin-bottom:10px;color:var(--mint-dark)">Moving: ${label}</div>`;
+  moveHTML+=`<div style="margin-bottom:14px">`;
+  moveHTML+=`<div class="log-edit-label" style="margin-bottom:6px">Move to this date:</div>`;
+  moveHTML+=`<input type="date" id="move-target-date" value="${prevKey}" max="${fromKey}" style="width:100%;padding:11px 12px;border:1px solid var(--mint-mid);border-radius:var(--radius-sm);font-size:15px;outline:none;font-family:'Nunito',sans-serif;background:#fff;cursor:pointer">`;
+  moveHTML+=`</div>`;
+  moveHTML+=`<div style="font-size:12px;color:var(--muted);margin-bottom:12px">⚠️ If the target date already has a log entry, it will be <strong style="color:#FF2D9B">overwritten</strong>.</div>`;
+  moveHTML+=`<div class="log-edit-actions"><button class="log-save-btn" style="background:var(--mint-mid);" onclick="confirmMoveDay('${fromKey}')">✦ Move Entry</button><button class="log-cancel-btn" onclick="renderWeekSummary()">Cancel</button></div>`;
+  moveHTML+=`</div>`;
+  document.getElementById('logDetail').innerHTML=moveHTML;
+}
+
+async function confirmMoveDay(fromKey){
+  const input=document.getElementById('move-target-date');
+  if(!input) return;
+  const toKey=input.value;
+  if(!toKey || toKey===fromKey){ toast('Please choose a different date.'); return; }
+  const entry=dailyLog[fromKey];
+  if(!entry){ toast('No entry found to move.'); return; }
+  // Copy to new date, delete from old
+  dailyLog[toKey]=entry;
+  delete dailyLog[fromKey];
+  saveLogLocal();
+  toast('Saving...');
+  // Save new date entry and delete old by saving an empty/null entry
+  await saveLogToSheet(toKey, entry);
+  await saveLogToSheet(fromKey, null);
+  renderCalendar();
+  renderWeekSummary();
+  const toDate=new Date(toKey+'T12:00:00');
+  const toLabel=toDate.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  toast('✦ Entry moved to '+toLabel+'!');
 }
 
 async function saveWeekEdit(editedKey){
