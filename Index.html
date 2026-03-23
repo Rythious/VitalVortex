@@ -266,6 +266,41 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
 .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: #1A0A2E; color: #E0AAFF; border: 1px solid rgba(191,95,255,0.4); padding: 12px 22px; border-radius: 24px; font-size: 14px; font-weight: 600; z-index: 300; opacity: 0; transition: opacity .3s; pointer-events: none; white-space: nowrap; }
 .toast.show { opacity: 1; }
 
+/* Cycle phase banner */
+.cycle-banner { border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; border: 1px solid rgba(255,45,155,0.3); background: linear-gradient(135deg, rgba(45,10,46,0.7), rgba(26,10,46,0.5)); }
+.cycle-banner-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.cycle-phase-name { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; color: #FF80CC; }
+.cycle-phase-dot { width: 10px; height: 10px; border-radius: 50%; background: #FF2D9B; flex-shrink: 0; }
+.cycle-phase-dot.follicular { background: #00B4FF; }
+.cycle-phase-dot.ovulation { background: #00FFD4; }
+.cycle-phase-dot.luteal { background: #FFD600; }
+.cycle-phase-name.follicular { color: #80DAFF; }
+.cycle-phase-name.ovulation { color: #7FFFEE; }
+.cycle-phase-name.luteal { color: #FFE97A; }
+.cycle-change-btn { font-size: 11px; color: var(--vv-accent); font-weight: 700; border: 1px solid rgba(191,95,255,0.4); border-radius: 6px; padding: 4px 10px; background: transparent; cursor: pointer; font-family: 'Nunito', sans-serif; }
+.cycle-focus-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 7px; }
+.cycle-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.cycle-tag { border-radius: 20px; padding: 4px 11px; font-size: 11px; font-weight: 700; cursor: pointer; }
+.cycle-expand-btn { font-size: 11px; color: var(--vv-accent); font-weight: 700; background: transparent; border: none; cursor: pointer; font-family: 'Nunito', sans-serif; margin-top: 9px; padding: 0; display: block; }
+.cycle-detail { margin-top: 10px; border-top: 1px solid rgba(168,85,247,0.2); padding-top: 10px; display: none; }
+.cycle-detail.open { display: block; }
+.cycle-nutrient-row { margin-bottom: 9px; }
+.cycle-nutrient-name { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+.cycle-food-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+.cycle-food-chip { border-radius: 6px; padding: 3px 9px; font-size: 11px; color: #F0E6FF; }
+/* phase selector overlay */
+.cycle-phase-overlay { position: fixed; inset: 0; background: rgba(2,4,20,0.75); z-index: 200; display: none; align-items: flex-end; justify-content: center; }
+.cycle-phase-overlay.open { display: flex; }
+.cycle-phase-sheet { background: var(--card); border-radius: var(--radius) var(--radius) 0 0; width: 100%; max-width: 680px; padding: 20px 16px 50px; }
+.cycle-sheet-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
+.cycle-phase-option { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--card); margin-bottom: 8px; cursor: pointer; }
+.cycle-phase-option:active { background: var(--lavender); }
+.cycle-phase-option.selected { border-color: var(--vv-accent); background: var(--lavender); }
+.cpo-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.cpo-text { flex: 1; }
+.cpo-name { font-size: 14px; font-weight: 700; color: var(--text); }
+.cpo-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
 /* Theme dropdown */
 .theme-select { background: rgba(191,95,255,0.12); border: 1px solid rgba(191,95,255,0.35); color: var(--text); font-family: 'Nunito', sans-serif; font-size: 11px; font-weight: 700; border-radius: 8px; padding: 4px 8px; cursor: pointer; outline: none; }
 .theme-select option { background: #1a0a2e; color: #F0E6FF; }
@@ -377,6 +412,30 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
     </div>
   </div>
 </div>
+
+  <!-- CYCLE PHASE SHEET -->
+  <div class="cycle-phase-overlay" id="cyclePhaseSheet">
+    <div class="cycle-phase-sheet">
+      <div class="cycle-sheet-title">🌙 Select your cycle phase</div>
+      <div class="cycle-phase-option" data-phase="menstrual" onclick="selectCyclePhase('menstrual')">
+        <div class="cpo-dot" style="background:#FF2D9B"></div>
+        <div class="cpo-text"><div class="cpo-name">🌑 Menstrual</div><div class="cpo-desc">Day 1–5 · Rest & replenish</div></div>
+      </div>
+      <div class="cycle-phase-option" data-phase="follicular" onclick="selectCyclePhase('follicular')">
+        <div class="cpo-dot" style="background:#00B4FF"></div>
+        <div class="cpo-text"><div class="cpo-name">🌱 Follicular</div><div class="cpo-desc">Day 6–13 · Build & energize</div></div>
+      </div>
+      <div class="cycle-phase-option" data-phase="ovulation" onclick="selectCyclePhase('ovulation')">
+        <div class="cpo-dot" style="background:#00FFD4"></div>
+        <div class="cpo-text"><div class="cpo-name">✨ Ovulation</div><div class="cpo-desc">Day 14–17 · Peak energy</div></div>
+      </div>
+      <div class="cycle-phase-option" data-phase="luteal" onclick="selectCyclePhase('luteal')">
+        <div class="cpo-dot" style="background:#FFD600"></div>
+        <div class="cpo-text"><div class="cpo-name">🌙 Luteal</div><div class="cpo-desc">Day 18–28 · Calm & support</div></div>
+      </div>
+      <button onclick="closeCycleSheet()" style="width:100%;margin-top:12px;padding:13px;background:transparent;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--muted);font-weight:700;font-size:14px;cursor:pointer;font-family:'Nunito',sans-serif">Cancel</button>
+    </div>
+  </div>
 
   <!-- PROFILE PANEL -->
   <div id="profileOverlay" style="display:none;position:fixed;inset:0;background:rgba(2,4,20,0.75);z-index:200;display:none;align-items:flex-end;justify-content:center">
@@ -1547,13 +1606,124 @@ function launchMeteorShower(){
   animate();
 }
 
+const CYCLE_PHASES = {
+  menstrual: {
+    label: 'Menstrual', emoji: '🌑', dotClass: 'menstrual', nameClass: 'menstrual',
+    desc: 'Day 1–5 · Rest & replenish',
+    tagColor: 'rgba(255,45,155,0.15)', tagBorder: 'rgba(255,45,155,0.3)', tagText: '#FF80CC',
+    chipBg: 'rgba(255,45,155,0.1)', chipBorder: 'rgba(255,45,155,0.22)',
+    nutrients: [
+      { name: 'Magnesium', color: '#FF2D9B', foods: ['dark chocolate','pumpkin seeds','spinach'] },
+      { name: 'Iron', color: '#FF7A00', foods: ['beef','spinach','lentils','quinoa','hazelnut'] },
+      { name: 'Zinc', color: '#FFD600', foods: ['beef','legumes','nuts & seeds','seafood'] },
+      { name: 'Antioxidants', color: '#00FFD4', foods: ['blueberries','citrus','green tea'] },
+      { name: 'B Vitamins', color: '#00B4FF', foods: ['carrots','sweet potatoes','broccoli','brown rice'] },
+      { name: 'Hormone Fats', color: '#BF5FFF', foods: ['avocado','fatty fish','bone broth'] }
+    ]
+  },
+  follicular: {
+    label: 'Follicular', emoji: '🌱', dotClass: 'follicular', nameClass: 'follicular',
+    desc: 'Day 6–13 · Build & energize',
+    tagColor: 'rgba(0,180,255,0.12)', tagBorder: 'rgba(0,180,255,0.3)', tagText: '#80DAFF',
+    chipBg: 'rgba(0,180,255,0.1)', chipBorder: 'rgba(0,180,255,0.22)',
+    nutrients: [
+      { name: 'Estrogen Support', color: '#00B4FF', foods: ['flaxseeds','fermented foods','cruciferous veggies'] },
+      { name: 'Lean Protein', color: '#00FFD4', foods: ['chicken','eggs','legumes','Greek yogurt'] },
+      { name: 'Complex Carbs', color: '#80DAFF', foods: ['oats','quinoa','sweet potato','brown rice'] },
+      { name: 'Zinc', color: '#FFD600', foods: ['pumpkin seeds','chickpeas','cashews'] },
+      { name: 'B Vitamins', color: '#BF5FFF', foods: ['leafy greens','eggs','sunflower seeds'] }
+    ]
+  },
+  ovulation: {
+    label: 'Ovulation', emoji: '✨', dotClass: 'ovulation', nameClass: 'ovulation',
+    desc: 'Day 14–17 · Peak energy',
+    tagColor: 'rgba(0,255,212,0.12)', tagBorder: 'rgba(0,255,212,0.3)', tagText: '#7FFFEE',
+    chipBg: 'rgba(0,255,212,0.1)', chipBorder: 'rgba(0,255,212,0.22)',
+    nutrients: [
+      { name: 'Antioxidants', color: '#00FFD4', foods: ['berries','spinach','bell peppers','citrus'] },
+      { name: 'Fiber', color: '#00FFA3', foods: ['broccoli','Brussels sprouts','chia seeds'] },
+      { name: 'Zinc', color: '#FFD600', foods: ['pumpkin seeds','beef','oysters'] },
+      { name: 'Anti-inflammatory', color: '#00B4FF', foods: ['fatty fish','turmeric','ginger','walnuts'] },
+      { name: 'Magnesium', color: '#7FFFEE', foods: ['dark chocolate','avocado','almonds'] }
+    ]
+  },
+  luteal: {
+    label: 'Luteal', emoji: '🌙', dotClass: 'luteal', nameClass: 'luteal',
+    desc: 'Day 18–28 · Calm & support',
+    tagColor: 'rgba(255,214,0,0.12)', tagBorder: 'rgba(255,214,0,0.3)', tagText: '#FFE97A',
+    chipBg: 'rgba(255,214,0,0.1)', chipBorder: 'rgba(255,214,0,0.22)',
+    nutrients: [
+      { name: 'Magnesium', color: '#FFD600', foods: ['dark chocolate','pumpkin seeds','spinach','almonds'] },
+      { name: 'Complex Carbs', color: '#FFE97A', foods: ['oats','sweet potato','brown rice','lentils'] },
+      { name: 'Calcium', color: '#00B4FF', foods: ['Greek yogurt','kale','almonds','sardines'] },
+      { name: 'B6', color: '#BF5FFF', foods: ['bananas','chicken','potatoes','sunflower seeds'] },
+      { name: 'Anti-inflammatory', color: '#00FFD4', foods: ['fatty fish','turmeric','ginger','berries'] }
+    ]
+  }
+};
+
+function getCyclePhase(){ return localStorage.getItem('vv_cycle_phase') || 'menstrual'; }
+function setCyclePhase(p){ localStorage.setItem('vv_cycle_phase', p); }
+
+function buildCycleBanner(){
+  const phaseKey = getCyclePhase();
+  const ph = CYCLE_PHASES[phaseKey];
+  const expanded = localStorage.getItem('vv_cycle_expanded') === '1';
+  let tags = ph.nutrients.map(n =>
+    `<span class="cycle-tag" style="background:${ph.tagColor};border:1px solid ${ph.tagBorder};color:${ph.tagText}">${n.name}</span>`
+  ).join('');
+  let detail = ph.nutrients.map(n =>
+    `<div class="cycle-nutrient-row">
+      <div class="cycle-nutrient-name" style="color:${n.color}">${n.name}</div>
+      <div class="cycle-food-chips">${n.foods.map(f=>`<span class="cycle-food-chip" style="background:${ph.chipBg};border:1px solid ${ph.chipBorder}">${f}</span>`).join('')}</div>
+    </div>`
+  ).join('');
+  return `<div class="cycle-banner">
+    <div class="cycle-banner-top">
+      <div class="cycle-phase-name ${ph.nameClass}"><div class="cycle-phase-dot ${ph.dotClass}"></div>${ph.emoji} ${ph.label} phase</div>
+      <button class="cycle-change-btn" onclick="openCycleSheet()">Change</button>
+    </div>
+    <div class="cycle-focus-label">Prioritize tomorrow</div>
+    <div class="cycle-tags">${tags}</div>
+    <button class="cycle-expand-btn" id="cycleExpandBtn" onclick="toggleCycleDetail()">${expanded ? '▴ Hide food sources' : '▾ Show food sources'}</button>
+    <div class="cycle-detail ${expanded ? 'open' : ''}" id="cycleDetail">${detail}</div>
+  </div>`;
+}
+
+function toggleCycleDetail(){
+  const d = document.getElementById('cycleDetail');
+  const b = document.getElementById('cycleExpandBtn');
+  if(!d) return;
+  const isOpen = d.classList.contains('open');
+  d.classList.toggle('open', !isOpen);
+  localStorage.setItem('vv_cycle_expanded', isOpen ? '0' : '1');
+  if(b) b.textContent = isOpen ? '▾ Show food sources' : '▴ Hide food sources';
+}
+
+function openCycleSheet(){
+  const current = getCyclePhase();
+  const sheet = document.getElementById('cyclePhaseSheet');
+  if(!sheet) return;
+  sheet.querySelectorAll('.cycle-phase-option').forEach(el => {
+    el.classList.toggle('selected', el.dataset.phase === current);
+  });
+  sheet.classList.add('open');
+}
+function closeCycleSheet(){ document.getElementById('cyclePhaseSheet').classList.remove('open'); }
+function selectCyclePhase(p){
+  setCyclePhase(p);
+  closeCycleSheet();
+  renderTomorrow();
+}
+
 function renderTomorrow(){
   const tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);
   const tLabel=tomorrow.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
   const totals={cal:0,fat:0,carb:0,sugar:0,fiber:0,protein:0};
   state.tomorrowMeals.forEach(meal=>meal.forEach(rawE=>{const e=normEntry(rawE);const f=state.foods.find(x=>x.id===e.id);const mult=e.qty*e.frac;if(f){totals.cal+=f.cal*mult;totals.fat+=f.fat*mult;totals.carb+=f.carb*mult;totals.sugar+=f.sugar*mult;totals.fiber+=f.fiber*mult;totals.protein+=f.protein*mult;}}));
   let html='';
-  html+=`<div style="background:var(--mint);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px"><div style="font-size:20px">🌙</div><div><div style="font-size:12px;font-weight:700;color:var(--mint-dark);text-transform:uppercase;letter-spacing:.5px">Prepping for</div><div style="font-size:14px;font-weight:700;color:var(--mint-dark)">${tLabel}</div></div></div>`;
+  html += buildCycleBanner();
+  html+=`<div style="background:var(--mint);border-radius:var(--radius);padding:10px 16px;margin-bottom:12px;display:flex;align-items:center;gap:10px"><div style="font-size:18px">🌙</div><div><div style="font-size:11px;font-weight:700;color:var(--mint-dark);text-transform:uppercase;letter-spacing:.5px">Prepping for</div><div style="font-size:13px;font-weight:700;color:var(--mint-dark)">${tLabel}</div></div></div>`;
   html+='<div class="section-title">Projected Totals</div><div class="daily-totals">';
   html+=buildMacroCards(totals);
   html+='</div>';
