@@ -270,10 +270,10 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
 .cycle-banner { border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; border: 1px solid rgba(255,45,155,0.3); background: linear-gradient(135deg, rgba(45,10,46,0.7), rgba(26,10,46,0.5)); }
 .cycle-banner-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .cycle-phase-name { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; color: #FF80CC; }
-.cycle-phase-dot { width: 10px; height: 10px; border-radius: 50%; background: #FF2D9B; flex-shrink: 0; }
-.cycle-phase-dot.follicular { background: #00B4FF; }
-.cycle-phase-dot.ovulation { background: #00FFD4; }
-.cycle-phase-dot.luteal { background: #FFD600; }
+.cycle-phase-dot { width: 12px; height: 12px; border-radius: 50%; background: #FF2D9B; flex-shrink: 0; box-shadow: 0 0 6px rgba(255,45,155,0.6); }
+.cycle-phase-dot.follicular { background: #00B4FF; box-shadow: 0 0 6px rgba(0,180,255,0.6); }
+.cycle-phase-dot.ovulation { background: #00FFD4; box-shadow: 0 0 6px rgba(0,255,212,0.6); }
+.cycle-phase-dot.luteal { background: #FFD600; box-shadow: 0 0 6px rgba(255,214,0,0.6); }
 .cycle-phase-name.follicular { color: #80DAFF; }
 .cycle-phase-name.ovulation { color: #7FFFEE; }
 .cycle-phase-name.luteal { color: #FFE97A; }
@@ -1683,7 +1683,7 @@ function buildCycleBanner(){
   ).join('');
   return `<div class="cycle-banner">
     <div class="cycle-banner-top">
-      <div class="cycle-phase-name ${ph.nameClass}"><div class="cycle-phase-dot ${ph.dotClass}"></div>${ph.emoji} ${ph.label} phase</div>
+      <div class="cycle-phase-name ${ph.nameClass}"><div class="cycle-phase-dot ${ph.dotClass}"></div>${ph.label} phase</div>
       <button class="cycle-change-btn" onclick="openCycleSheet()">Change</button>
     </div>
     <div class="cycle-focus-label">Prioritize tomorrow</div>
