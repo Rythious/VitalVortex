@@ -72,10 +72,7 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
 .macro-goal-lbl { font-size: 9px; color: var(--muted); font-weight: 600; }
 .macro-lbl { font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .3px; }
 /* Galaxy card (over-goal bad macro) */
-.macro-card.blackhole { border: 2px solid rgba(180,100,255,0.6); }
-.macro-card.blackhole .macro-val { color: #fff; text-shadow: 0 0 6px rgba(255,255,255,0.9), 0 0 2px #fff; font-weight: 800; }
-.macro-card.blackhole .macro-goal-lbl { color: rgba(255,255,255,0.85); }
-.macro-card.blackhole .macro-lbl { color: rgba(255,255,255,0.8); }
+.macro-card.blackhole { border: 2px solid rgba(255,180,80,0.5); }
 @keyframes galaxySpin {
   0%   { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
@@ -767,57 +764,65 @@ const GOOD_MACROS = new Set(['protein','fiber']); // more is better
 const BAD_MACROS  = new Set(['cal','carb','sugar','fat']); // over = bad
 
 function blackholeSVG(){
-  // Unique gradient IDs per call to avoid collisions when multiple cards show
   const uid = Math.random().toString(36).slice(2,7);
-  return `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;animation:galaxyPulse 3s ease-in-out infinite">
+  return `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;animation:galaxyPulse 3.5s ease-in-out infinite">
     <defs>
-      <radialGradient id="gCore${uid}" cx="50%" cy="50%" r="50%">
-        <stop offset="0%"  stop-color="#ffffff" stop-opacity="0.0"/>
-        <stop offset="25%" stop-color="#ffe8ff" stop-opacity="0.0"/>
-        <stop offset="45%" stop-color="#cc66ff" stop-opacity="0.08"/>
-        <stop offset="68%" stop-color="#7700cc" stop-opacity="0.28"/>
-        <stop offset="85%" stop-color="#330066" stop-opacity="0.50"/>
-        <stop offset="100%" stop-color="#110022" stop-opacity="0.72"/>
+      <radialGradient id="bulge${uid}" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"  stop-color="#fff8e0" stop-opacity="0"/>
+        <stop offset="20%" stop-color="#ffe8a0" stop-opacity="0"/>
+        <stop offset="40%" stop-color="#ffaa44" stop-opacity="0.09"/>
+        <stop offset="60%" stop-color="#cc5500" stop-opacity="0.28"/>
+        <stop offset="80%" stop-color="#550011" stop-opacity="0.50"/>
+        <stop offset="100%" stop-color="#1a0004" stop-opacity="0.78"/>
       </radialGradient>
-      <radialGradient id="gDust${uid}" cx="50%" cy="50%" r="50%">
-        <stop offset="0%"  stop-color="#ff99ff" stop-opacity="0"/>
-        <stop offset="55%" stop-color="#aa44ff" stop-opacity="0.10"/>
+      <radialGradient id="disk${uid}" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"  stop-color="#ffcc66" stop-opacity="0"/>
+        <stop offset="42%" stop-color="#ff8844" stop-opacity="0.13"/>
+        <stop offset="72%" stop-color="#cc3366" stop-opacity="0.11"/>
         <stop offset="100%" stop-color="transparent" stop-opacity="0"/>
       </radialGradient>
-      <filter id="gBlur${uid}"><feGaussianBlur stdDeviation="1.8"/></filter>
-      <filter id="gSoftBlur${uid}"><feGaussianBlur stdDeviation="2.8"/></filter>
     </defs>
-    <!-- outer dust halo -->
-    <circle cx="40" cy="40" r="39" fill="url(#gDust${uid})" filter="url(#gSoftBlur${uid})"/>
-    <!-- spiral arm 1 -->
-    <path d="M40,40 Q52,28 62,18 Q68,12 72,8" fill="none" stroke="#cc66ff" stroke-width="3.5" stroke-linecap="round" opacity="0.28" filter="url(#gBlur${uid})"/>
-    <path d="M40,40 Q52,28 62,18 Q68,12 72,8" fill="none" stroke="#ff99ff" stroke-width="1.5" stroke-linecap="round" opacity="0.35"/>
-    <!-- spiral arm 2 (opposite) -->
-    <path d="M40,40 Q28,52 18,62 Q12,68 8,72" fill="none" stroke="#cc66ff" stroke-width="3.5" stroke-linecap="round" opacity="0.28" filter="url(#gBlur${uid})"/>
-    <path d="M40,40 Q28,52 18,62 Q12,68 8,72" fill="none" stroke="#ff99ff" stroke-width="1.5" stroke-linecap="round" opacity="0.35"/>
-    <!-- spiral arm 3 -->
-    <path d="M40,40 Q58,36 70,30 Q76,26 78,20" fill="none" stroke="#9933ff" stroke-width="2.5" stroke-linecap="round" opacity="0.22" filter="url(#gBlur${uid})"/>
-    <path d="M40,40 Q58,36 70,30 Q76,26 78,20" fill="none" stroke="#dd88ff" stroke-width="1" stroke-linecap="round" opacity="0.3"/>
-    <!-- spiral arm 4 -->
-    <path d="M40,40 Q22,44 10,50 Q4,54 2,60" fill="none" stroke="#9933ff" stroke-width="2.5" stroke-linecap="round" opacity="0.22" filter="url(#gBlur${uid})"/>
-    <path d="M40,40 Q22,44 10,50 Q4,54 2,60" fill="none" stroke="#dd88ff" stroke-width="1" stroke-linecap="round" opacity="0.3"/>
-    <!-- spiral arm 5 -->
-    <path d="M40,40 Q44,22 50,10 Q54,4 58,2" fill="none" stroke="#7700cc" stroke-width="2" stroke-linecap="round" opacity="0.2" filter="url(#gBlur${uid})"/>
-    <!-- spiral arm 6 -->
-    <path d="M40,40 Q36,58 30,70 Q26,76 22,78" fill="none" stroke="#7700cc" stroke-width="2" stroke-linecap="round" opacity="0.2" filter="url(#gBlur${uid})"/>
-    <!-- scattered star dots -->
-    <circle cx="14" cy="12" r="1.2" fill="#ff99ff" opacity="0.7"/>
-    <circle cx="66" cy="10" r="0.9" fill="#00FFD4" opacity="0.6"/>
-    <circle cx="72" cy="54" r="1.1" fill="#ff88ff" opacity="0.5"/>
-    <circle cx="10" cy="58" r="0.8" fill="#cc88ff" opacity="0.6"/>
-    <circle cx="62" cy="70" r="1.0" fill="#ffaaff" opacity="0.55"/>
-    <circle cx="22" cy="68" r="0.9" fill="#00B4FF" opacity="0.5"/>
-    <circle cx="76" cy="38" r="0.7" fill="#ff99ff" opacity="0.5"/>
-    <circle cx="6"  cy="30" r="0.8" fill="#aa66ff" opacity="0.55"/>
-    <!-- core gradient overlay — transparent in center so text shows through -->
-    <circle cx="40" cy="40" r="39" fill="url(#gCore${uid})"/>
-    <!-- inner core glow ring (subtle, not blocking) -->
-    <circle cx="40" cy="40" r="11" fill="none" stroke="#ff88ff" stroke-width="1.5" opacity="0.22" filter="url(#gBlur${uid})"/>
+    <ellipse cx="40" cy="40" rx="39" ry="25" fill="url(#disk${uid})"/>
+    <path d="M40,40 C47,32 57,22 66,14 C72,9 78,6 80,8" fill="none" stroke="#ffcc44" stroke-width="4" stroke-linecap="round" opacity="0.18"/>
+    <path d="M40,40 C47,32 57,22 66,14 C72,9 78,6 80,8" fill="none" stroke="#ffe888" stroke-width="1.6" stroke-linecap="round" opacity="0.40"/>
+    <path d="M40,40 C47,32 57,22 66,14 C72,9 78,6 80,8" fill="none" stroke="#fff0aa" stroke-width="0.6" stroke-linecap="round" opacity="0.55"/>
+    <path d="M40,40 C33,48 23,58 14,66 C8,71 2,74 0,72" fill="none" stroke="#ffcc44" stroke-width="4" stroke-linecap="round" opacity="0.18"/>
+    <path d="M40,40 C33,48 23,58 14,66 C8,71 2,74 0,72" fill="none" stroke="#ffe888" stroke-width="1.6" stroke-linecap="round" opacity="0.40"/>
+    <path d="M40,40 C33,48 23,58 14,66 C8,71 2,74 0,72" fill="none" stroke="#fff0aa" stroke-width="0.6" stroke-linecap="round" opacity="0.55"/>
+    <path d="M40,40 C50,45 62,52 72,58 C78,62 80,66 78,70" fill="none" stroke="#ff9966" stroke-width="3" stroke-linecap="round" opacity="0.16"/>
+    <path d="M40,40 C50,45 62,52 72,58 C78,62 80,66 78,70" fill="none" stroke="#ffcc88" stroke-width="1.1" stroke-linecap="round" opacity="0.34"/>
+    <path d="M40,40 C30,35 18,28 8,22 C2,18 0,14 2,10"  fill="none" stroke="#ff9966" stroke-width="3" stroke-linecap="round" opacity="0.16"/>
+    <path d="M40,40 C30,35 18,28 8,22 C2,18 0,14 2,10"  fill="none" stroke="#ffcc88" stroke-width="1.1" stroke-linecap="round" opacity="0.34"/>
+    <circle cx="40" cy="38" r="0.5" fill="#ffe8aa" opacity="0.30"/>
+    <circle cx="43" cy="43" r="0.4" fill="#fff0cc" opacity="0.28"/>
+    <circle cx="37" cy="42" r="0.5" fill="#ffe8aa" opacity="0.26"/>
+    <circle cx="54" cy="30" r="0.7" fill="#ffe888" opacity="0.50"/>
+    <circle cx="59" cy="26" r="0.6" fill="#fff0aa" opacity="0.46"/>
+    <circle cx="28" cy="50" r="0.7" fill="#ffe888" opacity="0.50"/>
+    <circle cx="24" cy="55" r="0.6" fill="#fff0aa" opacity="0.44"/>
+    <circle cx="56" cy="52" r="0.7" fill="#ffcc77" opacity="0.46"/>
+    <circle cx="26" cy="30" r="0.7" fill="#ffcc77" opacity="0.44"/>
+    <circle cx="62" cy="17" r="1.1" fill="#fff0cc" opacity="0.82"/>
+    <circle cx="68" cy="12" r="0.8" fill="#ffe888" opacity="0.76"/>
+    <circle cx="74" cy="8"  r="1.0" fill="#fff8dd" opacity="0.78"/>
+    <circle cx="78" cy="10" r="0.7" fill="#ffddaa" opacity="0.68"/>
+    <circle cx="60" cy="22" r="0.8" fill="#ffe8aa" opacity="0.70"/>
+    <circle cx="16" cy="63" r="1.1" fill="#fff0cc" opacity="0.82"/>
+    <circle cx="11" cy="68" r="0.8" fill="#ffe888" opacity="0.76"/>
+    <circle cx="6"  cy="72" r="1.0" fill="#fff8dd" opacity="0.78"/>
+    <circle cx="4"  cy="67" r="0.7" fill="#ffddaa" opacity="0.68"/>
+    <circle cx="20" cy="59" r="0.8" fill="#ffe8aa" opacity="0.70"/>
+    <circle cx="72" cy="55" r="1.0" fill="#ffcc88" opacity="0.76"/>
+    <circle cx="76" cy="62" r="0.8" fill="#ffe8aa" opacity="0.70"/>
+    <circle cx="78" cy="68" r="0.9" fill="#ffddaa" opacity="0.74"/>
+    <circle cx="6"  cy="16" r="1.0" fill="#ffcc88" opacity="0.76"/>
+    <circle cx="4"  cy="10" r="0.8" fill="#ffe8aa" opacity="0.70"/>
+    <circle cx="2"  cy="8"  r="0.9" fill="#ffddaa" opacity="0.74"/>
+    <circle cx="70" cy="20" r="0.6" fill="#ffe8aa" opacity="0.58"/>
+    <circle cx="14" cy="60" r="0.6" fill="#ffe8aa" opacity="0.56"/>
+    <circle cx="74" cy="60" r="0.5" fill="#ffcc88" opacity="0.52"/>
+    <circle cx="6"  cy="20" r="0.5" fill="#ffcc88" opacity="0.52"/>
+    <ellipse cx="40" cy="40" rx="39" ry="25" fill="url(#bulge${uid})"/>
   </svg>`;
 }
 
