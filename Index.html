@@ -1668,7 +1668,7 @@ const CYCLE_PHASES = {
 function getCyclePhase(){ return localStorage.getItem('vv_cycle_phase') || 'menstrual'; }
 function setCyclePhase(p){ localStorage.setItem('vv_cycle_phase', p); }
 
-function buildCycleBanner(){
+function buildCycleBanner(tLabel){
   const phaseKey = getCyclePhase();
   const ph = CYCLE_PHASES[phaseKey];
   const expanded = localStorage.getItem('vv_cycle_expanded') === '1';
@@ -1686,6 +1686,7 @@ function buildCycleBanner(){
       <div class="cycle-phase-name ${ph.nameClass}">${ph.emoji} ${ph.label} phase</div>
       <button class="cycle-change-btn" onclick="openCycleSheet()">Change</button>
     </div>
+    <div style="font-size:12px;font-weight:700;color:var(--mint-dark);margin-bottom:8px">Prepping for ${tLabel}</div>
     <div class="cycle-focus-label">Prioritize tomorrow</div>
     <div class="cycle-tags">${tags}</div>
     <button class="cycle-expand-btn" id="cycleExpandBtn" onclick="toggleCycleDetail()">${expanded ? '▴ Hide food sources' : '▾ Show food sources'}</button>
@@ -1725,7 +1726,7 @@ function renderTomorrow(){
   const totals={cal:0,fat:0,carb:0,sugar:0,fiber:0,protein:0};
   state.tomorrowMeals.forEach(meal=>meal.forEach(rawE=>{const e=normEntry(rawE);const f=state.foods.find(x=>x.id===e.id);const mult=e.qty*e.frac;if(f){totals.cal+=f.cal*mult;totals.fat+=f.fat*mult;totals.carb+=f.carb*mult;totals.sugar+=f.sugar*mult;totals.fiber+=f.fiber*mult;totals.protein+=f.protein*mult;}}));
   let html='';
-  html += buildCycleBanner();
+  html += buildCycleBanner(tLabel);
   html+='<div class="section-title">Projected Totals</div><div class="daily-totals">';
   html+=buildMacroCards(totals);
   html+='</div>';
