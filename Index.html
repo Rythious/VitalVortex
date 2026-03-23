@@ -1076,14 +1076,8 @@ function renderPlanner(){
     const mt={cal:0,fat:0,carb:0,sugar:0,fiber:0,protein:0};
     mf.forEach(rawEntry=>{const e=normEntry(rawEntry);const f=state.foods.find(x=>x.id===e.id);const mult=e.qty*e.frac;if(f){mt.cal+=f.cal*mult;mt.fat+=f.fat*mult;mt.carb+=f.carb*mult;mt.sugar+=f.sugar*mult;mt.fiber+=f.fiber*mult;mt.protein+=f.protein*mult;}});
     const macroRow = mf.length>0 ? `<div style="font-size:10px;color:var(--muted);font-weight:600;margin-top:2px;opacity:0.85">Fat:${Math.round(mt.fat)}g &middot; C:${Math.round(mt.carb)}g &middot; Fb:${Math.round(mt.fiber)}g &middot; Sg:${Math.round(mt.sugar)}g &middot; P:${Math.round(mt.protein)}g</div>` : '';
-    const isConfirmed = state.confirmedMeals[mi];
-    const hasItems = mf.length > 0;
-    // only show confirm button if meal has items, not yet confirmed, AND not already confirmed today
-    const confirmKey = todayKey()+'-confirm-'+mi;
-    const confirmedToday = localStorage.getItem(confirmKey) === '1';
-    const confirmBtn = hasItems && !isConfirmed && !confirmedToday ? `<button onclick="confirmMeal(${mi})" style="margin-top:8px;width:100%;padding:9px;border:1.5px solid rgba(0,221,68,0.4);border-radius:var(--radius-sm);background:rgba(0,221,68,0.08);color:#00DD44;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">✓ Confirm — stuck to this meal</button>` : '';
-    const cardOpacity = hasItems && !isConfirmed && !confirmedToday ? 'opacity:0.72' : '';
-    html+=`<div class="meal-card m${mi}" style="${cardOpacity};transition:opacity 0.3s"><div class="meal-header"><div class="meal-badge">${m.emoji}</div><div style="flex:1;margin-left:10px"><div class="meal-name">${m.name}</div>${macroRow}</div><div class="meal-cals">${Math.round(mc)} cal</div></div><div class="meal-body">${items||'<div style="font-size:12px;color:var(--muted);padding:6px 0">No foods added yet</div>'}${confirmBtn}<button class="add-food-btn" onclick="openPickerFor('today',${mi})">+ Add food</button></div></div>`;
+    const cardOpacity = '';
+    html+=`<div class="meal-card m${mi}"><div class="meal-header"><div class="meal-badge">${m.emoji}</div><div style="flex:1;margin-left:10px"><div class="meal-name">${m.name}</div>${macroRow}</div><div class="meal-cals">${Math.round(mc)} cal</div></div><div class="meal-body">${items||'<div style="font-size:12px;color:var(--muted);padding:6px 0">No foods added yet</div>'}<button class="add-food-btn" onclick="openPickerFor('today',${mi})">+ Add food</button></div></div>`;
   });
   html+='</div>';
   document.getElementById('plannerContent').innerHTML=html;
