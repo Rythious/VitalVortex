@@ -1362,16 +1362,20 @@ function renderCalendar(){
       const wrapper=document.createElement('div');
       wrapper.innerHTML=svgHTML;
       el.insertBefore(wrapper.firstChild,el.firstChild);
-      const textColor=isPeriod?'#4a003a':'#003322';
-      const textNodes=[...el.childNodes].filter(n=>n.nodeType===3||n.tagName==='DIV'&&!n.querySelector('svg'));
-      textNodes.forEach(n=>{
-        if(n.nodeType===3&&n.textContent.trim()){
+      if(isPeriod){
+        // hide the date number — icon alone is enough
+        const textNodes=[...el.childNodes].filter(n=>n.nodeType===3&&n.textContent.trim());
+        textNodes.forEach(n=>{ n.textContent=''; });
+      } else {
+        // moon: keep date visible in dark contrasting color
+        const textNodes=[...el.childNodes].filter(n=>n.nodeType===3&&n.textContent.trim());
+        textNodes.forEach(n=>{
           const span=document.createElement('span');
           span.textContent=n.textContent;
-          span.style.cssText='position:relative;z-index:2;color:'+textColor+';font-weight:800;';
+          span.style.cssText='position:relative;z-index:2;color:#003322;font-weight:800;';
           n.parentNode.replaceChild(span,n);
-        }
-      });
+        });
+      }
     }
     // period days get a click handler to toggle even without a log entry
     if(isPeriod&&!el.onclick){
