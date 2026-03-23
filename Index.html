@@ -71,20 +71,18 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
 .macro-val { font-size: 20px; font-weight: 800; color: var(--text); line-height: 1.1; }
 .macro-goal-lbl { font-size: 9px; color: var(--muted); font-weight: 600; }
 .macro-lbl { font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .3px; }
-/* Black hole card */
-.macro-card.blackhole { border: 2px solid #1a0033; background: #000 !important; }
-.macro-card.blackhole .macro-val { color: transparent; text-shadow: none; }
-.macro-card.blackhole .macro-goal-lbl { color: transparent; }
-.macro-card.blackhole .macro-lbl { color: rgba(80,0,120,0.6); }
-@keyframes blackholePull {
-  0%   { transform: scale(1) rotate(0deg); filter: brightness(1); }
-  40%  { transform: scale(0.97) rotate(-1deg); filter: brightness(0.7); }
-  100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+/* Galaxy card (over-goal bad macro) */
+.macro-card.blackhole { border: 2px solid #3a0066; background: #0a0018 !important; }
+.macro-card.blackhole .macro-val { color: #fff; text-shadow: 0 0 8px rgba(255,200,255,0.9), 0 0 2px #fff; font-weight: 800; }
+.macro-card.blackhole .macro-goal-lbl { color: rgba(220,180,255,0.85); }
+.macro-card.blackhole .macro-lbl { color: rgba(180,130,255,0.8); }
+@keyframes galaxySpin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
-@keyframes spaghetti {
-  0%   { transform: scaleX(1) scaleY(1) translateY(0); opacity: 1; }
-  60%  { transform: scaleX(0.3) scaleY(1.6) translateY(4px); opacity: 0.5; }
-  100% { transform: scaleX(0.05) scaleY(2) translateY(8px); opacity: 0; }
+@keyframes galaxyPulse {
+  0%,100% { opacity: 0.85; }
+  50%      { opacity: 1; }
 }
 
 /* Protein goal */
@@ -769,40 +767,57 @@ const GOOD_MACROS = new Set(['protein','fiber']); // more is better
 const BAD_MACROS  = new Set(['cal','carb','sugar','fat']); // over = bad
 
 function blackholeSVG(){
-  return `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none">
+  // Unique gradient IDs per call to avoid collisions when multiple cards show
+  const uid = Math.random().toString(36).slice(2,7);
+  return `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;animation:galaxyPulse 3s ease-in-out infinite">
     <defs>
-      <radialGradient id="bhGlow" cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stop-color="#000" stop-opacity="1"/>
-        <stop offset="45%" stop-color="#1a0040" stop-opacity="1"/>
-        <stop offset="70%" stop-color="#4400aa" stop-opacity="0.6"/>
-        <stop offset="85%" stop-color="#7700ff" stop-opacity="0.3"/>
+      <radialGradient id="gCore${uid}" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"  stop-color="#ffffff" stop-opacity="0.0"/>
+        <stop offset="18%" stop-color="#ffe8ff" stop-opacity="0.0"/>
+        <stop offset="35%" stop-color="#cc66ff" stop-opacity="0.12"/>
+        <stop offset="60%" stop-color="#7700cc" stop-opacity="0.45"/>
+        <stop offset="80%" stop-color="#330066" stop-opacity="0.72"/>
+        <stop offset="100%" stop-color="#0a0018"  stop-opacity="0.92"/>
+      </radialGradient>
+      <radialGradient id="gDust${uid}" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"  stop-color="#ff99ff" stop-opacity="0"/>
+        <stop offset="55%" stop-color="#aa44ff" stop-opacity="0.18"/>
         <stop offset="100%" stop-color="transparent" stop-opacity="0"/>
       </radialGradient>
-      <radialGradient id="bhRing" cx="50%" cy="50%" r="50%">
-        <stop offset="55%" stop-color="transparent"/>
-        <stop offset="68%" stop-color="#aa44ff" stop-opacity="0.9"/>
-        <stop offset="74%" stop-color="#ff88ff" stop-opacity="1"/>
-        <stop offset="80%" stop-color="#aa44ff" stop-opacity="0.7"/>
-        <stop offset="100%" stop-color="transparent"/>
-      </radialGradient>
-      <filter id="bhBlur"><feGaussianBlur stdDeviation="1.5"/></filter>
+      <filter id="gBlur${uid}"><feGaussianBlur stdDeviation="1.8"/></filter>
+      <filter id="gSoftBlur${uid}"><feGaussianBlur stdDeviation="2.8"/></filter>
     </defs>
-    <!-- accretion disc glow (blurred ellipse for perspective) -->
-    <ellipse cx="40" cy="44" rx="34" ry="10" fill="none" stroke="#9933ff" stroke-width="5" opacity="0.35" filter="url(#bhBlur)"/>
-    <ellipse cx="40" cy="44" rx="34" ry="10" fill="none" stroke="#ff88ff" stroke-width="2" opacity="0.5" filter="url(#bhBlur)"/>
-    <!-- photon ring -->
-    <circle cx="40" cy="40" r="26" fill="url(#bhRing)" filter="url(#bhBlur)"/>
-    <!-- event horizon -->
-    <circle cx="40" cy="40" r="18" fill="url(#bhGlow)"/>
-    <!-- singularity -->
-    <circle cx="40" cy="40" r="7" fill="#000"/>
-    <!-- lensing streaks being pulled in -->
-    <line x1="10" y1="18" x2="32" y2="36" stroke="#cc66ff" stroke-width="1" opacity="0.5"/>
-    <line x1="70" y1="16" x2="48" y2="35" stroke="#cc66ff" stroke-width="1" opacity="0.5"/>
-    <line x1="6"  y1="52" x2="30" y2="42" stroke="#aa44ff" stroke-width="1" opacity="0.4"/>
-    <line x1="74" y1="54" x2="50" y2="43" stroke="#aa44ff" stroke-width="1" opacity="0.4"/>
-    <line x1="30" y1="6"  x2="38" y2="28" stroke="#ff88ff" stroke-width="0.8" opacity="0.4"/>
-    <line x1="50" y1="6"  x2="42" y2="28" stroke="#ff88ff" stroke-width="0.8" opacity="0.4"/>
+    <!-- outer dust halo -->
+    <circle cx="40" cy="40" r="39" fill="url(#gDust${uid})" filter="url(#gSoftBlur${uid})"/>
+    <!-- spiral arm 1 -->
+    <path d="M40,40 Q52,28 62,18 Q68,12 72,8" fill="none" stroke="#cc66ff" stroke-width="3.5" stroke-linecap="round" opacity="0.28" filter="url(#gBlur${uid})"/>
+    <path d="M40,40 Q52,28 62,18 Q68,12 72,8" fill="none" stroke="#ff99ff" stroke-width="1.5" stroke-linecap="round" opacity="0.35"/>
+    <!-- spiral arm 2 (opposite) -->
+    <path d="M40,40 Q28,52 18,62 Q12,68 8,72" fill="none" stroke="#cc66ff" stroke-width="3.5" stroke-linecap="round" opacity="0.28" filter="url(#gBlur${uid})"/>
+    <path d="M40,40 Q28,52 18,62 Q12,68 8,72" fill="none" stroke="#ff99ff" stroke-width="1.5" stroke-linecap="round" opacity="0.35"/>
+    <!-- spiral arm 3 -->
+    <path d="M40,40 Q58,36 70,30 Q76,26 78,20" fill="none" stroke="#9933ff" stroke-width="2.5" stroke-linecap="round" opacity="0.22" filter="url(#gBlur${uid})"/>
+    <path d="M40,40 Q58,36 70,30 Q76,26 78,20" fill="none" stroke="#dd88ff" stroke-width="1" stroke-linecap="round" opacity="0.3"/>
+    <!-- spiral arm 4 -->
+    <path d="M40,40 Q22,44 10,50 Q4,54 2,60" fill="none" stroke="#9933ff" stroke-width="2.5" stroke-linecap="round" opacity="0.22" filter="url(#gBlur${uid})"/>
+    <path d="M40,40 Q22,44 10,50 Q4,54 2,60" fill="none" stroke="#dd88ff" stroke-width="1" stroke-linecap="round" opacity="0.3"/>
+    <!-- spiral arm 5 -->
+    <path d="M40,40 Q44,22 50,10 Q54,4 58,2" fill="none" stroke="#7700cc" stroke-width="2" stroke-linecap="round" opacity="0.2" filter="url(#gBlur${uid})"/>
+    <!-- spiral arm 6 -->
+    <path d="M40,40 Q36,58 30,70 Q26,76 22,78" fill="none" stroke="#7700cc" stroke-width="2" stroke-linecap="round" opacity="0.2" filter="url(#gBlur${uid})"/>
+    <!-- scattered star dots -->
+    <circle cx="14" cy="12" r="1.2" fill="#ff99ff" opacity="0.7"/>
+    <circle cx="66" cy="10" r="0.9" fill="#00FFD4" opacity="0.6"/>
+    <circle cx="72" cy="54" r="1.1" fill="#ff88ff" opacity="0.5"/>
+    <circle cx="10" cy="58" r="0.8" fill="#cc88ff" opacity="0.6"/>
+    <circle cx="62" cy="70" r="1.0" fill="#ffaaff" opacity="0.55"/>
+    <circle cx="22" cy="68" r="0.9" fill="#00B4FF" opacity="0.5"/>
+    <circle cx="76" cy="38" r="0.7" fill="#ff99ff" opacity="0.5"/>
+    <circle cx="6"  cy="30" r="0.8" fill="#aa66ff" opacity="0.55"/>
+    <!-- core gradient overlay — transparent in center so text shows through -->
+    <circle cx="40" cy="40" r="39" fill="url(#gCore${uid})"/>
+    <!-- inner core glow ring (subtle, not blocking) -->
+    <circle cx="40" cy="40" r="11" fill="none" stroke="#ff88ff" stroke-width="1.5" opacity="0.22" filter="url(#gBlur${uid})"/>
   </svg>`;
 }
 
@@ -816,7 +831,7 @@ function buildMacroCards(totals){
     const isBad   = BAD_MACROS.has(m.k);
     const crashed = isOver && isBad;
     if(crashed){
-      return `<div class="macro-card ${m.cls} blackhole" style="animation:blackholePull 0.8s ease forwards">${blackholeSVG()}<div class="macro-val" style="position:relative;z-index:3;animation:spaghetti 0.8s ease forwards">${val}</div><div class="macro-goal-lbl" style="position:relative;z-index:3;animation:spaghetti 0.9s ease forwards">/ ${goal}</div><div class="macro-lbl" style="position:relative;z-index:3">${m.lbl}</div></div>`;
+      return `<div class="macro-card ${m.cls} blackhole">${blackholeSVG()}<div class="macro-val" style="position:relative;z-index:3">${val}</div><div class="macro-goal-lbl" style="position:relative;z-index:3">/ ${goal}</div><div class="macro-lbl" style="position:relative;z-index:3">${m.lbl}</div></div>`;
     }
     // good macros: keep color filling even over goal; bad macros under goal: normal fill
     const rgb = colors[m.k];
