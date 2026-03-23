@@ -564,6 +564,7 @@ function saveCustomGoals(){
   proteinGoal = a.protein;
   saveProfileLocal();
   saveLocal();
+  savePlanToSheet();
   renderProfilePage();
   renderPlanner();
   toast('✦ Goals saved!');
@@ -612,6 +613,7 @@ function saveProfile(){
   MACRO_GOALS.fiber=g.fiber;
   proteinGoal=g.protein;
   saveLocal();
+  savePlanToSheet();
   renderProfilePage();
   renderPlanner();
   toast('✦ Goals recalculated!');
@@ -1047,13 +1049,7 @@ function renderPlanner(){
   html+='<div class="section-title">Daily Totals</div><div class="daily-totals">';
   html+=buildMacroCards(totals);
   html+='</div>';
-  const pct=Math.min(100,Math.round((totals.protein/proteinGoal)*100));
-  const done=totals.protein>=proteinGoal;
-  html+=`<div class="protein-goal-bar">`;
-  html+=`<div class="protein-goal-label">${done?'🎉':'💪'} Protein ${Math.round(totals.protein)}/${proteinGoal}g</div>`;
-  html+=`<div class="protein-goal-track"><div class="protein-goal-fill${done?' done':''}" style="width:${pct}%"></div></div>`;
-  html+=`<button class="protein-goal-edit" onclick="editProteinGoal()">edit goal</button>`;
-  html+='</div>';
+
   html+='<button class="clear-day-btn" onclick="clearDay()">🗓 Save & Clear Today\'s Meals</button>';
   html+='<div class="section-title">Meals</div><div class="meals-grid">';
   MEALS.forEach((m,mi)=>{
