@@ -72,10 +72,10 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
 .macro-goal-lbl { font-size: 9px; color: var(--muted); font-weight: 600; }
 .macro-lbl { font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .3px; }
 /* Galaxy card (over-goal bad macro) */
-.macro-card.blackhole { border: 2px solid #3a0066; background: #0a0018 !important; }
-.macro-card.blackhole .macro-val { color: #fff; text-shadow: 0 0 8px rgba(255,200,255,0.9), 0 0 2px #fff; font-weight: 800; }
-.macro-card.blackhole .macro-goal-lbl { color: rgba(220,180,255,0.85); }
-.macro-card.blackhole .macro-lbl { color: rgba(180,130,255,0.8); }
+.macro-card.blackhole { border: 2px solid rgba(180,100,255,0.6); }
+.macro-card.blackhole .macro-val { color: #fff; text-shadow: 0 0 6px rgba(255,255,255,0.9), 0 0 2px #fff; font-weight: 800; }
+.macro-card.blackhole .macro-goal-lbl { color: rgba(255,255,255,0.85); }
+.macro-card.blackhole .macro-lbl { color: rgba(255,255,255,0.8); }
 @keyframes galaxySpin {
   0%   { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
@@ -773,15 +773,15 @@ function blackholeSVG(){
     <defs>
       <radialGradient id="gCore${uid}" cx="50%" cy="50%" r="50%">
         <stop offset="0%"  stop-color="#ffffff" stop-opacity="0.0"/>
-        <stop offset="18%" stop-color="#ffe8ff" stop-opacity="0.0"/>
-        <stop offset="35%" stop-color="#cc66ff" stop-opacity="0.12"/>
-        <stop offset="60%" stop-color="#7700cc" stop-opacity="0.45"/>
-        <stop offset="80%" stop-color="#330066" stop-opacity="0.72"/>
-        <stop offset="100%" stop-color="#0a0018"  stop-opacity="0.92"/>
+        <stop offset="25%" stop-color="#ffe8ff" stop-opacity="0.0"/>
+        <stop offset="45%" stop-color="#cc66ff" stop-opacity="0.08"/>
+        <stop offset="68%" stop-color="#7700cc" stop-opacity="0.28"/>
+        <stop offset="85%" stop-color="#330066" stop-opacity="0.50"/>
+        <stop offset="100%" stop-color="#110022" stop-opacity="0.72"/>
       </radialGradient>
       <radialGradient id="gDust${uid}" cx="50%" cy="50%" r="50%">
         <stop offset="0%"  stop-color="#ff99ff" stop-opacity="0"/>
-        <stop offset="55%" stop-color="#aa44ff" stop-opacity="0.18"/>
+        <stop offset="55%" stop-color="#aa44ff" stop-opacity="0.10"/>
         <stop offset="100%" stop-color="transparent" stop-opacity="0"/>
       </radialGradient>
       <filter id="gBlur${uid}"><feGaussianBlur stdDeviation="1.8"/></filter>
@@ -831,7 +831,9 @@ function buildMacroCards(totals){
     const isBad   = BAD_MACROS.has(m.k);
     const crashed = isOver && isBad;
     if(crashed){
-      return `<div class="macro-card ${m.cls} blackhole">${blackholeSVG()}<div class="macro-val" style="position:relative;z-index:3">${val}</div><div class="macro-goal-lbl" style="position:relative;z-index:3">/ ${goal}</div><div class="macro-lbl" style="position:relative;z-index:3">${m.lbl}</div></div>`;
+      const rgb = colors[m.k];
+      const bg  = `linear-gradient(to top, rgba(${rgb},0.25) 100%, transparent 100%)`;
+      return `<div class="macro-card ${m.cls} blackhole" style="background:${bg}">${blackholeSVG()}<div class="macro-val" style="position:relative;z-index:3">${val}</div><div class="macro-goal-lbl" style="position:relative;z-index:3">/ ${goal}</div><div class="macro-lbl" style="position:relative;z-index:3">${m.lbl}</div></div>`;
     }
     // good macros: keep color filling even over goal; bad macros under goal: normal fill
     const rgb = colors[m.k];
