@@ -326,10 +326,6 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
       <button class="cal-nav-btn" onclick="changeMonth(1)">&#8594;</button>
     </div>
     <div class="cal-grid" id="calGrid"></div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <div style="font-size:11px;font-weight:700;color:#FF80CC;text-transform:uppercase;letter-spacing:.5px">🌸 Period Tracker</div>
-      <button onclick="togglePeriodDate(todayKey())" style="background:rgba(255,45,155,0.15);border:1px solid rgba(255,45,155,0.4);color:#FF80CC;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;padding:5px 12px;border-radius:20px;cursor:pointer">+ Mark today as period start</button>
-    </div>
     <div id="logDetail"></div>
   </div>
 
@@ -860,18 +856,17 @@ async function loadPeriodsFromSheet(){
 }
 function togglePeriodDate(key){
   if(periodDates[key]){
-    if(!confirm('Remove period start marker for this date?'))return;
     delete periodDates[key];
     savePeriodLocal();
     savePeriodToSheet(key,false);
+    toast('Period marker removed.');
   } else {
     periodDates[key]=true;
     savePeriodLocal();
     savePeriodToSheet(key,true);
+    toast('✦ Period start marked!');
   }
   renderCalendar();
-  renderWeekSummary();
-  toast(periodDates[key]?'✦ Period start marked!':'Period marker removed.');
 }
 
 // ─── API CALLS ───────────────────────────────────────────────────────────────────
@@ -1247,9 +1242,15 @@ function editWeekDay(editKey){
   const entry=dailyLog[editKey]||{};
   const d=new Date(editKey+'T12:00:00');
   const label=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  const isPeriod=!!periodDates[editKey];
   let editHTML=`<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px">Editing — ${label}</div>`;
   editHTML+=`<div class="log-detail" style="border:1.5px solid var(--vv-accent);margin-bottom:8px">`;
   editHTML+=`<div class="log-detail-date" style="margin-bottom:10px">${label}</div>`;
+  // Period start toggle at the top of the edit panel
+  editHTML+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;margin-bottom:10px;border-bottom:1px solid var(--border)">`;
+  editHTML+=`<div style="display:flex;align-items:center;gap:8px"><span style="font-size:15px">🌸</span><span style="font-size:13px;font-weight:700;color:#FF80CC">Period start</span></div>`;
+  editHTML+=`<button onclick="togglePeriodDate('${editKey}');editWeekDay('${editKey}')" style="background:${isPeriod?'rgba(255,45,155,0.25)':'rgba(255,255,255,0.06)'};border:1px solid ${isPeriod?'rgba(255,45,155,0.6)':'var(--border)'};color:${isPeriod?'#FF80CC':'var(--muted)'};font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;cursor:pointer">${isPeriod?'✦ Marked':'+ Mark'}</button>`;
+  editHTML+='</div>';
   editHTML+='<div class="log-edit-grid">';
   MACROS.forEach(m=>{
     editHTML+=`<div class="log-edit-group"><div class="log-edit-label">${m.lbl}</div><input class="log-edit-input" id="we-${m.k}" type="number" min="0" value="${entry[m.k]||0}"></div>`;
