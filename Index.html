@@ -1608,7 +1608,7 @@ function launchMeteorShower(){
 
 const CYCLE_PHASES = {
   menstrual: {
-    label: 'Menstrual', emoji: '🌑', dotClass: 'menstrual', nameClass: 'menstrual',
+    label: 'Menstrual', dotColor: '#FF2D9B', nameClass: 'menstrual',
     desc: 'Day 1–5 · Rest & replenish',
     tagColor: 'rgba(255,45,155,0.15)', tagBorder: 'rgba(255,45,155,0.3)', tagText: '#FF80CC',
     chipBg: 'rgba(255,45,155,0.1)', chipBorder: 'rgba(255,45,155,0.22)',
@@ -1625,7 +1625,7 @@ const CYCLE_PHASES = {
     ]
   },
   follicular: {
-    label: 'Follicular', emoji: '🌱', dotClass: 'follicular', nameClass: 'follicular',
+    label: 'Follicular', dotColor: '#00B4FF', nameClass: 'follicular',
     desc: 'Day 6–13 · Build & energize',
     tagColor: 'rgba(0,180,255,0.12)', tagBorder: 'rgba(0,180,255,0.3)', tagText: '#80DAFF',
     chipBg: 'rgba(0,180,255,0.1)', chipBorder: 'rgba(0,180,255,0.22)',
@@ -1638,7 +1638,7 @@ const CYCLE_PHASES = {
     ]
   },
   ovulation: {
-    label: 'Ovulation', emoji: '✨', dotClass: 'ovulation', nameClass: 'ovulation',
+    label: 'Ovulation', dotColor: '#00FFD4', nameClass: 'ovulation',
     desc: 'Day 14–17 · Peak energy',
     tagColor: 'rgba(0,255,212,0.12)', tagBorder: 'rgba(0,255,212,0.3)', tagText: '#7FFFEE',
     chipBg: 'rgba(0,255,212,0.1)', chipBorder: 'rgba(0,255,212,0.22)',
@@ -1651,7 +1651,7 @@ const CYCLE_PHASES = {
     ]
   },
   luteal: {
-    label: 'Luteal', emoji: '🌙', dotClass: 'luteal', nameClass: 'luteal',
+    label: 'Luteal', dotColor: '#FFD600', nameClass: 'luteal',
     desc: 'Day 18–28 · Calm & support',
     tagColor: 'rgba(255,214,0,0.12)', tagBorder: 'rgba(255,214,0,0.3)', tagText: '#FFE97A',
     chipBg: 'rgba(255,214,0,0.1)', chipBorder: 'rgba(255,214,0,0.22)',
@@ -1683,7 +1683,7 @@ function buildCycleBanner(){
   ).join('');
   return `<div class="cycle-banner">
     <div class="cycle-banner-top">
-      <div class="cycle-phase-name ${ph.nameClass}"><div class="cycle-phase-dot ${ph.dotClass}"></div>${ph.label} phase</div>
+      <div class="cycle-phase-name ${ph.nameClass}"><svg width="10" height="10" viewBox="0 0 10 10" style="flex-shrink:0"><circle cx="5" cy="5" r="5" fill="${ph.dotColor}"/></svg>${ph.label} phase</div>
       <button class="cycle-change-btn" onclick="openCycleSheet()">Change</button>
     </div>
     <div class="cycle-focus-label">Prioritize tomorrow</div>
