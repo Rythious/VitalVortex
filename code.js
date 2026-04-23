@@ -36,7 +36,14 @@ function handleRequest(e) {
     const sheet = ss.getSheetByName('Menu') || ss.getSheets()[0];
     sheet.clearContents();
     sheet.appendRow(['id','name','portion','cal','fat','carb','sugar','fiber','protein']);
-    body.foods.forEach(f => sheet.appendRow([f.id,f.name,f.portion,f.cal,f.fat,f.carb,f.sugar,f.fiber,f.protein]));
+    // Deduplicate by ID to prevent duplicate menu items when syncing
+    const seen = new Set();
+    const unique = body.foods.filter(f => {
+      if (seen.has(f.id)) return false;
+      seen.add(f.id);
+      return true;
+    });
+    unique.forEach(f => sheet.appendRow([f.id,f.name,f.portion,f.cal,f.fat,f.carb,f.sugar,f.fiber,f.protein]));
     return out({ok:true});
   }
 
