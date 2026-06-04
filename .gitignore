@@ -1,6 +1,11 @@
 # Personal data — not part of the codebase
 vitalvortex_data.json
 
+# Local SQLite databases and the session secret (created at runtime / live in volumes)
+*.db
+keys/
+_smoke/
+
 # Python cache
 __pycache__/
 *.pyc

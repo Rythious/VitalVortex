@@ -1,0 +1,20 @@
+# Vital Vortex — one Compose stack, same shape as TheChoreDrawer.
+# Caddy already routes vitalvortex.duckdns.org -> localhost:8082, so this
+# publishes the container's 8080 to 127.0.0.1:8082 and needs no Caddy changes.
+services:
+  vitalvortex:
+    image: rythious/vitalvortex:latest
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8082:8080"
+    volumes:
+      # SQLite database file
+      - vitalvortex-data:/data
+      # Flask session secret — persisted so redeploys don't log everyone out.
+      # (Analog of ChoreDrawer's Data Protection keys volume — don't skip it.)
+      - vitalvortex-keys:/keys
+
+volumes:
+  vitalvortex-data:
+  vitalvortex-keys:

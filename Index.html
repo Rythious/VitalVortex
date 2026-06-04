@@ -280,6 +280,19 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
 </style>
 </head>
 <body>
+<div id="loginOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:#10121a;align-items:center;justify-content:center;padding:24px">
+  <form id="loginForm" onsubmit="return submitLogin(event)" style="width:100%;max-width:340px;text-align:center">
+    <div style="font-size:26px;letter-spacing:3px;font-weight:700;color:#e8e6f0">VITAL VORTEX</div>
+    <div style="font-size:12px;letter-spacing:2px;opacity:0.55;margin-bottom:28px;color:#e8e6f0">MACRO TRACKER</div>
+    <input id="loginEmail" type="email" autocomplete="username" placeholder="email" required
+      style="width:100%;box-sizing:border-box;padding:12px 14px;margin-bottom:10px;border-radius:10px;border:1px solid #2c2f3e;background:#1a1d28;color:#e8e6f0;font-size:15px">
+    <input id="loginPassword" type="password" autocomplete="current-password" placeholder="password" required
+      style="width:100%;box-sizing:border-box;padding:12px 14px;margin-bottom:14px;border-radius:10px;border:1px solid #2c2f3e;background:#1a1d28;color:#e8e6f0;font-size:15px">
+    <button type="submit" id="loginBtn"
+      style="width:100%;padding:12px;border-radius:10px;border:none;background:#6c5ce7;color:#fff;font-size:15px;font-weight:600;cursor:pointer">Sign in</button>
+    <div id="loginError" style="color:#ff6b6b;font-size:13px;margin-top:12px;min-height:16px"></div>
+  </form>
+</div>
 <div class="app">
   <div class="top-bar">
     <div>
@@ -289,6 +302,7 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
       <div style="display:flex;align-items:center;gap:8px">
         <button onclick="openProfile()" style="background:transparent;border:none;cursor:pointer;font-size:18px;padding:2px 4px;opacity:0.7" title="My Profile">⚙️</button>
+        <button onclick="doLogout()" style="background:transparent;border:none;cursor:pointer;font-size:16px;padding:2px 4px;opacity:0.7" title="Sign out">⏻</button>
         <div class="sync-status"><div class="sync-dot" id="syncDot"></div><span id="syncLabel">connecting...</span></div>
       </div>
       <div class="date-display" id="dateDisplay"></div>
@@ -448,12 +462,12 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
 <div class="toast" id="toast"></div>
 
 <script>
-// ─── ENVIRONMENT DETECTION ────────────────────────────────────────────────
-// When running locally via server.py, API calls go to http://localhost:8765/api.
-// When running as a deployed Google Apps Script web app, API calls use
-// google.script.run (the built-in Apps Script bridge) instead of fetch.
-const IS_LOCAL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
-const API_URL  = 'http://localhost:8765/api'; // only used when IS_LOCAL is true
+// ─── API ──────────────────────────────────────────────────────────────────
+// The app and its API are served from the same origin (Flask backend), so all
+// calls are plain same-origin fetches to /api. Cookies (the login session) ride
+// along automatically. No environment branching needed.
+const API_URL = '/api';
+let currentUserEmail = null; // set after login; used to namespace the local cache
 
 // ─── PROFILE & GOAL CALCULATOR ─────────────────────────────────────────────
 let userProfile = {age:38, heightIn:63, weightLbs:194, goalLbs:165, activity:1.375, ratePerWeek:1500};
@@ -833,41 +847,66 @@ function saveLogLocal(){
 }
 
 // ─── API CALLS ───────────────────────────────────────────────────────────────────
-// Unified API bridge: local calls go to the Python server via fetch;
-// deployed calls use google.script.run (Apps Script's server bridge).
-
-// Wrap google.script.run in a Promise so we can await it like fetch.
-function gsRun(params){
-  return new Promise((resolve) => {
-    google.script.run
-      .withSuccessHandler(result => resolve(result))
-      .withFailureHandler(err => { console.error('gs.run error:', err); resolve(null); })
-      .handleRequest(params);
-  });
+// API bridge: every call is a same-origin fetch to the Flask backend. The login
+// session cookie is sent automatically. A 401 means the session expired/was lost,
+// so we drop back to the login screen.
+async function apiFetch(path, options={}){
+  try{
+    const res = await fetch(path, {credentials:'same-origin', ...options, headers:{'Content-Type':'application/json'}});
+    if(res.status === 401){ showLogin(); return null; }
+    return await res.json();
+  }catch(e){
+    console.error('API error:', e);
+    return null;
+  }
 }
 
-async function apiFetch(path, options={}){
-  if(IS_LOCAL){
-    try{
-      const res = await fetch(path, {...options, headers:{'Content-Type':'application/json'}});
-      return await res.json();
-    }catch(e){
-      console.error('API error:', e);
-      return null;
-    }
-  } else {
-    // Deployed: extract action and body from the call and use google.script.run
-    try{
-      const url = new URL(path, location.href);
-      const action = url.searchParams.get('action') || (options.body ? JSON.parse(options.body).action : '');
-      const body   = options.body ? JSON.parse(options.body) : {};
-      const params = {...body, action};
-      return await gsRun(params);
-    }catch(e){
-      console.error('gsRun error:', e);
-      return null;
-    }
+// ─── AUTH ───────────────────────────────────────────────────────────────────
+function showLogin(){
+  const o=document.getElementById('loginOverlay');
+  o.style.display='flex';
+  document.getElementById('loginError').textContent='';
+  document.getElementById('loginPassword').value='';
+}
+function hideLogin(){ document.getElementById('loginOverlay').style.display='none'; }
+
+// If a different person signs in on this browser, drop the previous user's
+// cached data so the two never bleed together. The backend is the source of
+// truth, so the new user simply reloads everything fresh.
+function resetCacheForUser(email){
+  const prev = localStorage.getItem('vv_cache_owner');
+  if(prev !== email){
+    Object.keys(localStorage).forEach(k=>{
+      if(k.startsWith('vitalvortex') || /-confirm-\d+$/.test(k)) localStorage.removeItem(k);
+    });
+    localStorage.setItem('vv_cache_owner', email);
   }
+}
+
+async function submitLogin(ev){
+  ev.preventDefault();
+  const btn=document.getElementById('loginBtn');
+  const err=document.getElementById('loginError');
+  btn.disabled=true; err.textContent='';
+  const email=document.getElementById('loginEmail').value.trim();
+  const password=document.getElementById('loginPassword').value;
+  const res=await apiFetch(API_URL,{method:'POST',body:JSON.stringify({action:'login',email,password})});
+  btn.disabled=false;
+  if(res && res.ok){
+    currentUserEmail=res.email;
+    resetCacheForUser(res.email);
+    hideLogin();
+    await startApp();
+  }else{
+    err.textContent='Incorrect email or password.';
+  }
+  return false;
+}
+
+async function doLogout(){
+  await apiFetch(API_URL,{method:'POST',body:JSON.stringify({action:'logout'})});
+  currentUserEmail=null;
+  showLogin();
 }
 
 async function loadFoodsFromSheet(){
@@ -1698,7 +1737,20 @@ async function addFood(){
   toast('Saving...');await saveFoodsToSheet();toast('✦ '+food.name+' saved!');
 }
 
+// Boot: only start the app if there's a valid login session; otherwise show the
+// login screen. submitLogin() calls startApp() once sign-in succeeds.
 async function init(){
+  const me=await apiFetch(API_URL+'?action=me');
+  if(me && me.ok){
+    currentUserEmail=me.email;
+    resetCacheForUser(me.email);
+    await startApp();
+  }else{
+    showLogin();
+  }
+}
+
+async function startApp(){
   try{ const t=localStorage.getItem('vitalvortex_theme'); if(t) applyTheme(t); }catch(e){}
   loadProfile();
   // apply active goals on startup (custom overrides if set, otherwise formula)
