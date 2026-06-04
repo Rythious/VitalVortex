@@ -123,6 +123,28 @@ first login rather than inheriting placeholder defaults.
 > profile (that lived in the browser). So after importing, the first login on the
 > new app will prompt for profile setup once.
 
+### Food database search (USDA FoodData Central)
+
+On the Menu page, "Add New Food" includes a **search box** backed by USDA
+FoodData Central: search a food, pick a result, choose a serving (named household
+measures like "1 cup (240 g)" plus an editable gram amount), and the macros
+auto-fill — then save as usual. Covers generic whole foods and branded products.
+
+Enable it by setting a free API key (from <https://fdc.nal.usda.gov/api-key-signup.html>)
+in the same `.env`:
+
+```
+# /opt/vitalvortex/.env
+VV_FDC_API_KEY=your-fdc-key
+```
+
+The key stays server-side — the app proxies the API through two auth-gated
+actions (`foodsearch`, `fooddetail`), so it's never exposed to the browser and
+the proxy can't be used by anyone who isn't logged in. Leave `VV_FDC_API_KEY`
+unset to disable the feature; the search box hides itself and manual entry still
+works. USDA data is public domain, so imported foods can be stored permanently
+with no licensing restriction.
+
 ---
 
 ## Deployment

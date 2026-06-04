@@ -10,6 +10,9 @@ services:
       # Shared invite code for self-serve sign-up. Set it in a .env file next to
       # this compose file (VV_INVITE_CODE=...); leave unset to disable sign-up.
       - VV_INVITE_CODE=${VV_INVITE_CODE:-}
+      # USDA FoodData Central API key for the food-database search. Set in .env
+      # (VV_FDC_API_KEY=...); leave unset to disable search and hide its UI.
+      - VV_FDC_API_KEY=${VV_FDC_API_KEY:-}
     ports:
       - "127.0.0.1:8082:8080"
     volumes:

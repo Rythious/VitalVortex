@@ -20,9 +20,14 @@ CLI:
     flask --app app list-users
 """
 
+import json as _json
 import os
 import secrets
 import sqlite3
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
 
 import click
 from flask import Flask, g, request, jsonify, session, send_file
@@ -33,6 +38,11 @@ DB_PATH = os.environ.get("VV_DB_PATH", os.path.join(BASE_DIR, "vitalvortex.db"))
 KEYS_DIR = os.environ.get("VV_KEYS_DIR", os.path.join(BASE_DIR, "keys"))
 HTML_FILE = os.path.join(BASE_DIR, "Index.html")
 SCHEMA_FILE = os.path.join(BASE_DIR, "schema.sql")
+
+# USDA FoodData Central API key (kept server-side; the browser never sees it).
+# When unset, the food-search feature is disabled and the UI hides it.
+FDC_API_KEY = os.environ.get("VV_FDC_API_KEY", "")
+FDC_BASE = "https://api.nal.usda.gov/fdc/v1"
 
 
 def load_secret_key():
@@ -113,7 +123,7 @@ def do_login(body):
         session.permanent = True
         session["user_id"] = row["id"]
         session["email"] = email
-        return jsonify({"ok": True, "email": email})
+        return jsonify({"ok": True, "email": email, "searchEnabled": bool(FDC_API_KEY)})
     return jsonify({"ok": False, "error": "invalid credentials"}), 401
 
 
@@ -149,14 +159,14 @@ def do_register(body):
     session.permanent = True
     session["user_id"] = uid
     session["email"] = email
-    return jsonify({"ok": True, "email": email})
+    return jsonify({"ok": True, "email": email, "searchEnabled": bool(FDC_API_KEY)})
 
 
 def do_me():
     uid = current_user_id()
     if not uid:
         return login_required_error()
-    return jsonify({"ok": True, "email": session.get("email")})
+    return jsonify({"ok": True, "email": session.get("email"), "searchEnabled": bool(FDC_API_KEY)})
 
 
 # ─── Data actions (scoped to the logged-in user) ─────────────────────────────
@@ -270,6 +280,150 @@ def _num(v):
         return 0.0
 
 
+# ─── USDA FoodData Central proxy ─────────────────────────────────────────────
+# nutrientNumber -> our macro key. All FDC nutrient values here are per 100 g.
+FDC_NUTRIENT_MAP = {
+    "208": "cal", "203": "protein", "204": "fat",
+    "205": "carb", "291": "fiber", "269": "sugar",
+}
+MACRO_KEYS = ("cal", "protein", "fat", "carb", "fiber", "sugar")
+
+
+def _fdc_get(path, params, body=None):
+    # Only the api_key goes in the query string. Anything with spaces or special
+    # characters (e.g. the dataType "Survey (FNDDS)") goes in a JSON POST body —
+    # putting it in the URL sporadically trips api.data.gov's edge with a 400.
+    url = FDC_BASE + path + "?" + urllib.parse.urlencode(dict(params, api_key=FDC_API_KEY))
+    headers = {"User-Agent": "VitalVortex"}
+    data = None
+    if body is not None:
+        data = _json.dumps(body).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+    # api.data.gov sporadically fails transient requests, so retry those. Don't
+    # retry deterministic client errors like 404 (some FDC foods have no detail).
+    last = None
+    for attempt in range(3):
+        try:
+            req = urllib.request.Request(url, data=data, headers=headers)
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                return _json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            if e.code not in (429, 500, 502, 503, 504):
+                raise
+            last = e
+            time.sleep(0.3 * (attempt + 1))
+        except urllib.error.URLError as e:
+            last = e
+            time.sleep(0.3 * (attempt + 1))
+    raise last
+
+
+def _macros_from_search_nutrients(nutrients):
+    """foods/search shape: flat entries with nutrientNumber/value (per 100 g)."""
+    out = {k: 0.0 for k in MACRO_KEYS}
+    for n in nutrients or []:
+        key = FDC_NUTRIENT_MAP.get(str(n.get("nutrientNumber")))
+        if key:
+            out[key] = _num(n.get("value"))
+    return out
+
+
+def _macros_from_detail_nutrients(nutrients):
+    """food/{id} shape: nested nutrient{number}/amount (per 100 g)."""
+    out = {k: 0.0 for k in MACRO_KEYS}
+    for n in nutrients or []:
+        nut = n.get("nutrient") or {}
+        key = FDC_NUTRIENT_MAP.get(str(nut.get("number")))
+        if key:
+            out[key] = _num(n.get("amount"))
+    return out
+
+
+def action_foodsearch(query):
+    if not FDC_API_KEY:
+        return jsonify({"ok": False, "error": "food search is not configured"}), 503
+    query = (query or "").strip()
+    if not query:
+        return jsonify({"ok": True, "results": []})
+    try:
+        data = _fdc_get("/foods/search", {}, body={
+            "query": query,
+            "pageSize": 25,
+            "dataType": ["Foundation", "SR Legacy", "Survey (FNDDS)", "Branded"],
+        })
+    except Exception:
+        return jsonify({"ok": False, "error": "search failed"}), 502
+    results = [{
+        "fdcId": f.get("fdcId"),
+        "name": f.get("description", ""),
+        "brand": f.get("brandName") or f.get("brandOwner") or "",
+        "dataType": f.get("dataType", ""),
+        "per100": _macros_from_search_nutrients(f.get("foodNutrients")),
+    } for f in data.get("foods", [])]
+    # Stable sort: generic data types ahead of Branded, relevance order preserved.
+    results.sort(key=lambda r: 1 if r["dataType"] == "Branded" else 0)
+    return jsonify({"ok": True, "results": results})
+
+
+def action_fooddetail(fdc_id):
+    if not FDC_API_KEY:
+        return jsonify({"ok": False, "error": "food search is not configured"}), 503
+    if not fdc_id:
+        return jsonify({"ok": False, "error": "missing fdcId"}), 400
+    try:
+        data = _fdc_get("/food/" + urllib.parse.quote(str(fdc_id)), {})
+    except Exception:
+        # Includes deterministic 404s (some FDC foods have no detail record). The
+        # frontend falls back to the search result's per-100g macros, so this is
+        # an expected "no detail" rather than a server fault.
+        return jsonify({"ok": False, "error": "no detail available"})
+    base = _macros_from_detail_nutrients(data.get("foodNutrients"))
+    servings = [{"label": "100 g", "grams": 100.0}]
+    default_index = 0
+    if data.get("dataType") == "Branded":
+        size = _num(data.get("servingSize"))
+        unit = (data.get("servingSizeUnit") or "").lower()
+        if size > 0 and unit in ("g", "ml"):
+            house = (data.get("householdServingFullText") or "").strip()
+            label = ("{} ".format(house) if house else "") + "({:g} {})".format(size, unit)
+            servings.append({"label": label.strip(), "grams": size})
+            default_index = len(servings) - 1
+    else:
+        seen = set()
+        for p in data.get("foodPortions", []):
+            grams = _num(p.get("gramWeight"))
+            if grams <= 0:
+                continue
+            # Survey (FNDDS) foods carry the readable name in portionDescription
+            # and a numeric code in modifier; SR/Foundation use modifier as text.
+            desc = (p.get("portionDescription") or "").strip()
+            if desc and desc.lower() != "quantity not specified":
+                label = desc
+            else:
+                modifier = p.get("modifier") or ((p.get("measureUnit") or {}).get("name") or "")
+                if modifier in ("undetermined", None) or str(modifier).isdigit():
+                    modifier = ""
+                amount = p.get("amount")
+                amt = "{:g} ".format(_num(amount)) if amount else ""
+                label = (amt + modifier).strip() or "serving"
+            label = "{} ({:g} g)".format(label, grams)
+            if label in seen:
+                continue
+            seen.add(label)
+            servings.append({"label": label, "grams": grams})
+            if len(servings) >= 9:  # cap the dropdown (100 g + up to 8 portions)
+                break
+        if len(servings) > 1:
+            default_index = 1
+    return jsonify({
+        "ok": True,
+        "name": data.get("description", ""),
+        "base": base,
+        "servings": servings,
+        "defaultIndex": default_index,
+    })
+
+
 # ─── Routes ──────────────────────────────────────────────────────────────────
 
 @app.route("/")
@@ -322,6 +476,10 @@ def api():
         return action_loadsettings(uid)
     if action == "savesettings":
         return action_savesettings(uid, body)
+    if action == "foodsearch":
+        return action_foodsearch(request.args.get("q"))
+    if action == "fooddetail":
+        return action_fooddetail(request.args.get("fdcId"))
 
     return jsonify({"ok": False, "error": "unknown action: " + str(action)}), 400
 

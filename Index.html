@@ -357,6 +357,23 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
       <button onclick="toggleMenuAddForm()" id="menuAddToggle" style="background:var(--lavender);border:1px solid var(--lav-mid);color:var(--lav-dark);font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;padding:6px 12px;border-radius:var(--radius-sm);cursor:pointer">✦ Add New Food</button>
     </div>
     <div id="menuAddForm" style="display:none;background:var(--lavender);border:1px solid rgba(168,85,247,0.3);border-radius:var(--radius);padding:14px;margin-bottom:12px">
+      <div id="fdcSearchSection" style="display:none;margin-bottom:14px;padding-bottom:14px;border-bottom:1px dashed rgba(168,85,247,0.3)">
+        <div class="form-label" style="margin-bottom:6px">🔎 Search food database</div>
+        <div style="display:flex;gap:8px">
+          <input class="form-input" id="fdcSearch" placeholder="e.g. greek yogurt" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();runFdcSearch();}">
+          <button onclick="runFdcSearch()" id="fdcSearchBtn" style="padding:0 16px;background:var(--lav-mid);border:none;border-radius:var(--radius-sm);color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:'Nunito',sans-serif">Search</button>
+        </div>
+        <div id="fdcResults" style="margin-top:8px;max-height:240px;overflow-y:auto"></div>
+        <div id="fdcServingPicker" style="display:none;margin-top:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px">
+          <div class="form-label" style="margin-bottom:6px">Serving</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select class="form-input" id="fdcServing" style="flex:1;cursor:pointer" onchange="onFdcServingChange()"></select>
+            <input class="form-input" id="fdcGrams" type="number" min="1" style="width:90px" oninput="onFdcGramsChange()">
+            <span style="font-size:12px;color:var(--muted)">g</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px">Pick a serving or type grams — the macros below fill in automatically. Adjust anything, then Save.</div>
+        </div>
+      </div>
       <div class="form-grid">
         <div class="form-group full"><div class="form-label">Food Name</div><input class="form-input" id="mf-name" placeholder="e.g. Greek Yogurt"></div>
         <div class="form-group full"><div class="form-label">Portion Size</div><input class="form-input" id="mf-portion" placeholder="e.g. 1 cup (227g)"></div>
@@ -480,6 +497,7 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
 // along automatically. No environment branching needed.
 const API_URL = '/api';
 let currentUserEmail = null; // set after login; used to namespace the local cache
+let searchEnabled = false;   // true when the server has a USDA API key configured
 
 // ─── PROFILE & GOAL CALCULATOR ─────────────────────────────────────────────
 // Neutral defaults for a brand-new account — NOT any real person's stats. A new
@@ -959,6 +977,7 @@ async function submitLogin(ev){
   btn.disabled=false;
   if(res && res.ok){
     currentUserEmail=res.email;
+    searchEnabled=!!res.searchEnabled;
     resetCacheForUser(res.email);
     hideLogin();
     await startApp();
@@ -1529,10 +1548,16 @@ function toggleMenuAddForm(){
   } else {
     form.style.display='block';
     btn.textContent='✕ Cancel';
+    // Show the database-search section only when the server has a USDA key.
+    document.getElementById('fdcSearchSection').style.display = searchEnabled ? 'block' : 'none';
+    resetFdcSearch();
     // pre-fill name from search if there's a query
     const q=(document.getElementById('menuSearch')||{}).value||'';
-    if(q) document.getElementById('mf-name').value=q;
-    setTimeout(()=>document.getElementById('mf-name').focus(),50);
+    if(q){
+      document.getElementById('mf-name').value=q;
+      if(searchEnabled) document.getElementById('fdcSearch').value=q;
+    }
+    setTimeout(()=>document.getElementById(searchEnabled?'fdcSearch':'mf-name').focus(),50);
   }
 }
 async function addFoodFromMenu(){
@@ -1556,8 +1581,102 @@ async function addFoodFromMenu(){
   document.getElementById('menuAddForm').style.display='none';
   document.getElementById('menuAddToggle').textContent='✦ Add New Food';
   document.getElementById('menuSearch').value='';
+  resetFdcSearch();
   toast('Saving...');await saveFoodsToSheet();renderMenu();toast('✦ '+food.name+' saved!');
 }
+
+// ─── USDA FOOD DATABASE SEARCH ───────────────────────────────────────────────
+// Lets her search USDA FoodData Central and auto-fill the add-food fields below,
+// scaled to a chosen serving. The server proxies the API (key stays server-side).
+let fdcResultsCache = [];
+let fdcSelected = null; // {base:{...per 100g}, name, servings:[{label,grams}]}
+
+function resetFdcSearch(){
+  fdcResultsCache=[]; fdcSelected=null;
+  const r=document.getElementById('fdcResults'); if(r) r.innerHTML='';
+  const p=document.getElementById('fdcServingPicker'); if(p) p.style.display='none';
+}
+
+async function runFdcSearch(){
+  const q=document.getElementById('fdcSearch').value.trim();
+  if(!q) return;
+  const btn=document.getElementById('fdcSearchBtn');
+  const box=document.getElementById('fdcResults');
+  btn.disabled=true;
+  box.innerHTML='<div style="font-size:12px;color:var(--muted);padding:6px 0">Searching…</div>';
+  document.getElementById('fdcServingPicker').style.display='none';
+  const data=await apiFetch(API_URL+'?action=foodsearch&q='+encodeURIComponent(q));
+  btn.disabled=false;
+  if(!data || !data.ok){ box.innerHTML='<div style="font-size:12px;color:var(--muted);padding:6px 0">Search unavailable right now.</div>'; return; }
+  fdcResultsCache=data.results||[];
+  if(!fdcResultsCache.length){ box.innerHTML='<div style="font-size:12px;color:var(--muted);padding:6px 0">No matches found.</div>'; return; }
+  box.innerHTML=fdcResultsCache.map((r,i)=>{
+    const m=r.per100||{};
+    const brand=r.brand?' · <span style="color:var(--lav-dark)">'+fdcEsc(r.brand)+'</span>':'';
+    return '<div onclick="selectFdcFood('+i+')" style="padding:8px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px;cursor:pointer;background:var(--card)">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--text)">'+fdcEsc(r.name)+brand+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-top:2px">per 100g · '+Math.round(m.cal||0)+' cal · P:'+fdcRound(m.protein)+'g · F:'+fdcRound(m.fat)+'g · C:'+fdcRound(m.carb)+'g</div>'
+      +'</div>';
+  }).join('');
+}
+
+async function selectFdcFood(i){
+  const r=fdcResultsCache[i]; if(!r) return;
+  const data=await apiFetch(API_URL+'?action=fooddetail&fdcId='+encodeURIComponent(r.fdcId));
+  let di=0;
+  if(data && data.ok){
+    fdcSelected={base:data.base||{}, name:data.name||r.name,
+      servings:(data.servings&&data.servings.length)?data.servings:[{label:'100 g',grams:100}]};
+    di=Math.min(data.defaultIndex||0, fdcSelected.servings.length-1);
+  } else {
+    // Some USDA foods have no detail record (404) — fall back to the search
+    // result's per-100g macros so the food is still addable (grams only).
+    fdcSelected={base:r.per100||{}, name:r.name, servings:[{label:'100 g',grams:100}]};
+  }
+  const sel=document.getElementById('fdcServing');
+  sel.innerHTML=fdcSelected.servings.map((s,idx)=>'<option value="'+idx+'">'+fdcEsc(s.label)+'</option>').join('')
+    +'<option value="custom">Custom grams…</option>';
+  sel.value=String(di);
+  document.getElementById('fdcServingPicker').style.display='block';
+  applyFdcServing(fdcSelected.servings[di].grams, fdcSelected.servings[di].label);
+}
+
+function onFdcServingChange(){
+  if(!fdcSelected) return;
+  const sel=document.getElementById('fdcServing');
+  if(sel.value==='custom'){
+    applyFdcServing(parseFloat(document.getElementById('fdcGrams').value)||100, null);
+  } else {
+    const s=fdcSelected.servings[parseInt(sel.value)];
+    applyFdcServing(s.grams, s.label);
+  }
+}
+
+function onFdcGramsChange(){
+  if(!fdcSelected) return;
+  document.getElementById('fdcServing').value='custom';
+  applyFdcServing(parseFloat(document.getElementById('fdcGrams').value)||0, null);
+}
+
+// Fill the manual mf-* fields from the selected food, scaled to `grams`.
+function applyFdcServing(grams, label){
+  if(!fdcSelected) return;
+  grams=parseFloat(grams)||0;
+  document.getElementById('fdcGrams').value=fdcRound(grams);
+  const b=fdcSelected.base, f=grams/100;
+  document.getElementById('mf-name').value=fdcSelected.name;
+  document.getElementById('mf-portion').value=label || (fdcRound(grams)+' g');
+  document.getElementById('mf-cal').value=Math.round((b.cal||0)*f);
+  document.getElementById('mf-fat').value=fdcRound((b.fat||0)*f);
+  document.getElementById('mf-carb').value=fdcRound((b.carb||0)*f);
+  document.getElementById('mf-fiber').value=fdcRound((b.fiber||0)*f);
+  document.getElementById('mf-sugar').value=fdcRound((b.sugar||0)*f);
+  document.getElementById('mf-protein').value=fdcRound((b.protein||0)*f);
+}
+
+function fdcRound(n){ n=parseFloat(n)||0; return Math.round(n*10)/10; }
+function fdcEsc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
 function toggleEdit(id){if(editingId===id){cancelEdit();return;}editingId=id;renderMenu();setTimeout(()=>{const el=document.getElementById('medit-'+id);if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});},50);}
 function cancelEdit(){editingId=null;renderMenu();}
 
@@ -1810,6 +1929,7 @@ async function init(){
   const me=await apiFetch(API_URL+'?action=me');
   if(me && me.ok){
     currentUserEmail=me.email;
+    searchEnabled=!!me.searchEnabled;
     resetCacheForUser(me.email);
     await startApp();
   }else{
