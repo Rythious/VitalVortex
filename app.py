@@ -122,6 +122,36 @@ def do_logout():
     return jsonify({"ok": True})
 
 
+def do_register(body):
+    """Self-serve sign-up gated by a shared invite code (VV_INVITE_CODE)."""
+    required = os.environ.get("VV_INVITE_CODE", "")
+    if not required:
+        return jsonify({"ok": False, "error": "registration is disabled"}), 403
+    email = (body.get("email") or "").strip()
+    password = body.get("password") or ""
+    invite = body.get("invite") or ""
+    if invite != required:
+        return jsonify({"ok": False, "error": "invalid invite code"}), 403
+    if not email or "@" not in email:
+        return jsonify({"ok": False, "error": "a valid email is required"}), 400
+    if len(password) < 6:
+        return jsonify({"ok": False, "error": "password must be at least 6 characters"}), 400
+    db = get_db()
+    if db.execute("SELECT 1 FROM users WHERE email = ?", (email,)).fetchone():
+        return jsonify({"ok": False, "error": "that email is already registered"}), 409
+    db.execute(
+        "INSERT INTO users (email, pw_hash) VALUES (?, ?)",
+        (email, generate_password_hash(password)),
+    )
+    db.commit()
+    uid = db.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()["id"]
+    session.clear()
+    session.permanent = True
+    session["user_id"] = uid
+    session["email"] = email
+    return jsonify({"ok": True, "email": email})
+
+
 def do_me():
     uid = current_user_id()
     if not uid:
@@ -215,6 +245,24 @@ def action_log(uid, body):
     return jsonify({"ok": True})
 
 
+def action_loadsettings(uid):
+    row = get_db().execute(
+        "SELECT blob FROM settings WHERE user_id = ?", (uid,)
+    ).fetchone()
+    return jsonify({"ok": True, "blob": row["blob"] if row else None})
+
+
+def action_savesettings(uid, body):
+    db = get_db()
+    db.execute(
+        "INSERT INTO settings (user_id, blob) VALUES (?, ?) "
+        "ON CONFLICT(user_id) DO UPDATE SET blob = excluded.blob",
+        (uid, body.get("blob")),
+    )
+    db.commit()
+    return jsonify({"ok": True})
+
+
 def _num(v):
     try:
         return float(v)
@@ -248,6 +296,8 @@ def api():
         return do_login(body)
     if action == "logout":
         return do_logout()
+    if action == "register":
+        return do_register(body)
     if action == "me":
         return do_me()
 
@@ -268,6 +318,10 @@ def api():
         return action_readlog(uid)
     if action == "log":
         return action_log(uid, body)
+    if action == "loadsettings":
+        return action_loadsettings(uid)
+    if action == "savesettings":
+        return action_savesettings(uid, body)
 
     return jsonify({"ok": False, "error": "unknown action: " + str(action)}), 400
 

@@ -288,9 +288,15 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
       style="width:100%;box-sizing:border-box;padding:12px 14px;margin-bottom:10px;border-radius:10px;border:1px solid #2c2f3e;background:#1a1d28;color:#e8e6f0;font-size:15px">
     <input id="loginPassword" type="password" autocomplete="current-password" placeholder="password" required
       style="width:100%;box-sizing:border-box;padding:12px 14px;margin-bottom:14px;border-radius:10px;border:1px solid #2c2f3e;background:#1a1d28;color:#e8e6f0;font-size:15px">
+    <input id="loginInvite" type="text" autocomplete="off" placeholder="invite code"
+      style="display:none;width:100%;box-sizing:border-box;padding:12px 14px;margin-bottom:14px;border-radius:10px;border:1px solid #2c2f3e;background:#1a1d28;color:#e8e6f0;font-size:15px">
     <button type="submit" id="loginBtn"
       style="width:100%;padding:12px;border-radius:10px;border:none;background:#6c5ce7;color:#fff;font-size:15px;font-weight:600;cursor:pointer">Sign in</button>
     <div id="loginError" style="color:#ff6b6b;font-size:13px;margin-top:12px;min-height:16px"></div>
+    <div style="margin-top:6px;font-size:13px;color:#8b7fab">
+      <span id="authToggleText">Need an account?</span>
+      <a href="#" id="authToggleLink" onclick="toggleAuthMode(event)" style="color:#a855f7;text-decoration:none;font-weight:600">Sign up</a>
+    </div>
   </form>
 </div>
 <div class="app">
@@ -400,15 +406,21 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
     <div class="add-form" style="border-color:rgba(191,95,255,0.3)">
       <div class="form-title">My Profile</div>
       <div class="section-title" style="margin-top:0;margin-bottom:8px">App Style</div>
-      <select class="theme-select" id="themeSelect" onchange="applyTheme(this.value)" style="width:100%;padding:10px 12px;font-size:13px;margin-bottom:8px">
+      <select class="theme-select" id="themeSelect" onchange="onThemeChange(this.value)" style="width:100%;padding:10px 12px;font-size:13px;margin-bottom:8px">
         <option value="cosmic-lisa-frank">🌌 Cosmic Lisa Frank</option>
       </select>
       <div class="section-title" style="margin-bottom:8px">Body Stats</div>
       <div class="form-grid">
-        <div class="form-group"><div class="form-label">Age</div><input class="form-input" id="p-age" type="number" min="1" placeholder="38"></div>
-        <div class="form-group"><div class="form-label">Height (inches)</div><input class="form-input" id="p-height" type="number" min="1" placeholder="63"></div>
-        <div class="form-group"><div class="form-label">Current Weight (lbs)</div><input class="form-input" id="p-weight" type="number" min="1" placeholder="194"></div>
-        <div class="form-group"><div class="form-label">Goal Weight (lbs)</div><input class="form-input" id="p-goal" type="number" min="1" placeholder="165"></div>
+        <div class="form-group full"><div class="form-label">Sex (for metabolic rate)</div>
+          <select class="form-input" id="p-sex" style="cursor:pointer">
+            <option value="female">Female</option>
+            <option value="male">Male</option>
+          </select>
+        </div>
+        <div class="form-group"><div class="form-label">Age</div><input class="form-input" id="p-age" type="number" min="1" placeholder="30"></div>
+        <div class="form-group"><div class="form-label">Height (inches)</div><input class="form-input" id="p-height" type="number" min="1" placeholder="66"></div>
+        <div class="form-group"><div class="form-label">Current Weight (lbs)</div><input class="form-input" id="p-weight" type="number" min="1" placeholder="160"></div>
+        <div class="form-group"><div class="form-label">Goal Weight (lbs)</div><input class="form-input" id="p-goal" type="number" min="1" placeholder="150"></div>
         <div class="form-group full"><div class="form-label">Activity Level</div>
           <select class="form-input" id="p-activity" style="cursor:pointer">
             <option value="1.2">Sedentary (desk job, little exercise)</option>
@@ -470,10 +482,15 @@ const API_URL = '/api';
 let currentUserEmail = null; // set after login; used to namespace the local cache
 
 // ─── PROFILE & GOAL CALCULATOR ─────────────────────────────────────────────
-let userProfile = {age:38, heightIn:63, weightLbs:194, goalLbs:165, activity:1.375, ratePerWeek:1500};
+// Neutral defaults for a brand-new account — NOT any real person's stats. A new
+// user is prompted to fill in their own profile on first login.
+let userProfile = {sex:'female', age:30, heightIn:66, weightLbs:160, goalLbs:150, activity:1.375, ratePerWeek:500};
 let customGoals = {}; // overrides: {cal, protein, fat, carb} — empty means use calcGoals()
+let currentThemeId = 'cosmic-lisa-frank';
+let profileConfigured = false; // true once this user has saved a profile on the server
 
 function loadProfile(){
+  // Fast paint from the local cache; loadSettingsFromServer() is authoritative.
   try{
     const p=localStorage.getItem('vitalvortex_profile');
     if(p) userProfile=JSON.parse(p);
@@ -481,11 +498,34 @@ function loadProfile(){
     if(c) customGoals=JSON.parse(c);
   }catch(e){}
 }
-function saveProfileLocal(){
+
+// Persist personal settings (profile + custom goals + theme) both to the local
+// cache and to the server, so they follow this user across devices.
+function persistSettings(){
   try{
     localStorage.setItem('vitalvortex_profile',JSON.stringify(userProfile));
     localStorage.setItem('vitalvortex_custom_goals',JSON.stringify(customGoals));
+    localStorage.setItem('vitalvortex_theme',currentThemeId);
   }catch(e){}
+  const blob=JSON.stringify({profile:userProfile, customGoals, theme:currentThemeId});
+  apiFetch(API_URL,{method:'POST',body:JSON.stringify({action:'savesettings',blob})});
+}
+
+// Pull this user's settings from the server. Returns false if they have none
+// yet (a new account), so the caller can prompt them to set up their profile.
+async function loadSettingsFromServer(){
+  const data=await apiFetch(API_URL+'?action=loadsettings');
+  if(data && data.ok && data.blob){
+    try{
+      const s=JSON.parse(data.blob);
+      if(s.profile) userProfile=s.profile;
+      customGoals = s.customGoals || {};
+      if(s.theme) currentThemeId=s.theme;
+      profileConfigured=true;
+      return true;
+    }catch(e){}
+  }
+  return false;
 }
 function activeGoals(){
   // Returns the goals actually in use: custom overrides on top of calculated values
@@ -502,8 +542,9 @@ function activeGoals(){
   };
 }
 function calcGoals(profile){
-  // Mifflin-St Jeor BMR for female
-  const bmr = 10*(profile.weightLbs/2.205) + 6.25*(profile.heightIn*2.54) - 5*profile.age - 161;
+  // Mifflin-St Jeor BMR. The sex constant is +5 for male, -161 for female.
+  const sexConst = profile.sex === 'male' ? 5 : -161;
+  const bmr = 10*(profile.weightLbs/2.205) + 6.25*(profile.heightIn*2.54) - 5*profile.age + sexConst;
   const tdee = Math.round(bmr * profile.activity);
   const cal = Math.max(1200, tdee - profile.ratePerWeek);
   const protein = Math.round(profile.weightLbs * 0.7); // 0.7g per lb
@@ -514,6 +555,7 @@ function calcGoals(profile){
   return {cal, protein, fat, carb, sugar, fiber, tdee, bmr:Math.round(bmr)};
 }
 function renderProfilePage(){
+  document.getElementById('p-sex').value = userProfile.sex || 'female';
   document.getElementById('p-age').value = userProfile.age;
   document.getElementById('p-height').value = userProfile.heightIn;
   document.getElementById('p-weight').value = userProfile.weightLbs;
@@ -576,7 +618,7 @@ function saveCustomGoals(){
   MACRO_GOALS.fat     = a.fat;
   MACRO_GOALS.carb    = a.carb;
   proteinGoal = a.protein;
-  saveProfileLocal();
+  persistSettings();
   saveLocal();
   renderProfilePage();
   renderPlanner();
@@ -592,7 +634,7 @@ function resetCustomGoals(){
   MACRO_GOALS.sugar   = g.sugar;
   MACRO_GOALS.fiber   = g.fiber;
   proteinGoal = g.protein;
-  saveProfileLocal();
+  persistSettings();
   saveLocal();
   renderProfilePage();
   renderPlanner();
@@ -607,16 +649,18 @@ function closeProfile(){
   document.getElementById('profileOverlay').style.display='none';
 }
 function saveProfile(){
-  const age=parseInt(document.getElementById('p-age').value)||38;
-  const heightIn=parseFloat(document.getElementById('p-height').value)||63;
-  const weightLbs=parseFloat(document.getElementById('p-weight').value)||194;
-  const goalLbs=parseFloat(document.getElementById('p-goal').value)||165;
+  const sex=document.getElementById('p-sex').value||'female';
+  const age=parseInt(document.getElementById('p-age').value)||30;
+  const heightIn=parseFloat(document.getElementById('p-height').value)||66;
+  const weightLbs=parseFloat(document.getElementById('p-weight').value)||160;
+  const goalLbs=parseFloat(document.getElementById('p-goal').value)||150;
   const activity=parseFloat(document.getElementById('p-activity').value)||1.375;
-  const ratePerWeek=parseInt(document.getElementById('p-rate').value)||1500;
-  userProfile={age,heightIn,weightLbs,goalLbs,activity,ratePerWeek};
+  const ratePerWeek=parseInt(document.getElementById('p-rate').value)||500;
+  userProfile={sex,age,heightIn,weightLbs,goalLbs,activity,ratePerWeek};
+  profileConfigured=true;
   // Recalculate clears any custom overrides so fresh formula values apply
   customGoals={};
-  saveProfileLocal();
+  persistSettings();
   const g=calcGoals(userProfile);
   MACRO_GOALS.cal=g.cal;
   MACRO_GOALS.protein=g.protein;
@@ -652,12 +696,15 @@ const THEMES = {
 function applyTheme(id){
   const t = THEMES[id];
   if(!t) return;
+  currentThemeId = id;
   const root = document.documentElement;
   Object.entries(t).forEach(([k,v])=>{ if(k!=='bodyBg') root.style.setProperty(k,v); });
   if(t.bodyBg) document.body.style.backgroundImage = t.bodyBg;
   document.getElementById('themeSelect').value = id;
   try{ localStorage.setItem('vitalvortex_theme', id); }catch(e){}
 }
+// User-initiated theme change from the dropdown: apply and sync to the server.
+function onThemeChange(id){ applyTheme(id); persistSettings(); }
 
 const STARTER_FOODS = [
   {id:1,  name:"Adventureful Cookie",                       portion:"1 cookie",         cal:60,  fat:3,   carb:8,    fiber:0.5, sugar:4.5,  protein:0.5},
@@ -870,6 +917,20 @@ function showLogin(){
 }
 function hideLogin(){ document.getElementById('loginOverlay').style.display='none'; }
 
+let authMode = 'login'; // or 'register'
+function toggleAuthMode(ev){
+  if(ev) ev.preventDefault();
+  authMode = authMode === 'login' ? 'register' : 'login';
+  const registering = authMode === 'register';
+  document.getElementById('loginInvite').style.display = registering ? 'block' : 'none';
+  document.getElementById('loginInvite').required = registering;
+  document.getElementById('loginBtn').textContent = registering ? 'Create account' : 'Sign in';
+  document.getElementById('loginPassword').autocomplete = registering ? 'new-password' : 'current-password';
+  document.getElementById('authToggleText').textContent = registering ? 'Have an account?' : 'Need an account?';
+  document.getElementById('authToggleLink').textContent = registering ? 'Sign in' : 'Sign up';
+  document.getElementById('loginError').textContent = '';
+}
+
 // If a different person signs in on this browser, drop the previous user's
 // cached data so the two never bleed together. The backend is the source of
 // truth, so the new user simply reloads everything fresh.
@@ -890,7 +951,11 @@ async function submitLogin(ev){
   btn.disabled=true; err.textContent='';
   const email=document.getElementById('loginEmail').value.trim();
   const password=document.getElementById('loginPassword').value;
-  const res=await apiFetch(API_URL,{method:'POST',body:JSON.stringify({action:'login',email,password})});
+  const registering = authMode === 'register';
+  const payload = registering
+    ? {action:'register', email, password, invite:document.getElementById('loginInvite').value.trim()}
+    : {action:'login', email, password};
+  const res=await apiFetch(API_URL,{method:'POST',body:JSON.stringify(payload)});
   btn.disabled=false;
   if(res && res.ok){
     currentUserEmail=res.email;
@@ -898,7 +963,9 @@ async function submitLogin(ev){
     hideLogin();
     await startApp();
   }else{
-    err.textContent='Incorrect email or password.';
+    err.textContent = res && res.error
+      ? res.error.charAt(0).toUpperCase()+res.error.slice(1)+'.'
+      : (registering ? 'Could not create account.' : 'Incorrect email or password.');
   }
   return false;
 }
@@ -1751,8 +1818,10 @@ async function init(){
 }
 
 async function startApp(){
-  try{ const t=localStorage.getItem('vitalvortex_theme'); if(t) applyTheme(t); }catch(e){}
-  loadProfile();
+  loadProfile(); // fast paint from local cache
+  // Authoritative settings come from the server (profile, goals, theme).
+  const hadSettings = await loadSettingsFromServer();
+  applyTheme(currentThemeId);
   // apply active goals on startup (custom overrides if set, otherwise formula)
   const g=activeGoals();
   MACRO_GOALS.cal=g.cal;MACRO_GOALS.protein=g.protein;MACRO_GOALS.fat=g.fat;MACRO_GOALS.carb=g.carb;MACRO_GOALS.sugar=g.sugar;MACRO_GOALS.fiber=g.fiber;
@@ -1761,17 +1830,23 @@ async function startApp(){
   renderPlanner();
   const hasData = await loadFoodsFromSheet();
   if(!hasData){
-    state.foods = STARTER_FOODS;
-    state.nextId = 43;
-    toast('First launch — saving your 42 starter foods...');
+    state.foods = STARTER_FOODS.map(f=>({...f}));
+    state.nextId = Math.max(...STARTER_FOODS.map(f=>f.id)) + 1;
+    toast('Welcome! Adding '+STARTER_FOODS.length+' starter foods...');
     await saveFoodsToSheet();
-    toast('✦ All 42 foods saved locally!');
+    toast('✦ '+STARTER_FOODS.length+' starter foods added!');
   }
   await loadPlanFromSheet();
   // Seed recents from current plan meals if recents are empty
   seedRecentsFromPlan();
   renderPlanner();
   await loadLogFromSheet();
+  // Brand-new account with no saved profile: prompt them to set it up so their
+  // goals are based on their own body, not the placeholder defaults.
+  if(!hadSettings && !profileConfigured){
+    openProfile();
+    toast('Set up your profile to get accurate goals.');
+  }
 }
 
 function seedRecentsFromPlan(){

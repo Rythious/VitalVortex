@@ -31,6 +31,14 @@ CREATE TABLE IF NOT EXISTS plan (
     blob    TEXT
 );
 
+-- Per-user personal settings (profile, custom goals, theme) as one JSON blob.
+-- These used to live only in the browser's localStorage; storing them per user
+-- means a person's body stats and goals follow them across devices.
+CREATE TABLE IF NOT EXISTS settings (
+    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    blob    TEXT
+);
+
 -- One saved-day row per user per date (YYYY-MM-DD).
 CREATE TABLE IF NOT EXISTS log (
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

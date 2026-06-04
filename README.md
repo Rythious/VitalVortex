@@ -87,15 +87,41 @@ docker compose up --build      # http://localhost:8082
 
 ## Accounts
 
-There is no public sign-up — accounts are seeded from the CLI:
+Each user has their own login and their own data (foods, plan, history,
+**and** profile/goals/theme — all scoped per `user_id`).
+
+**Self-serve sign-up is gated by a shared invite code.** Set `VV_INVITE_CODE` in
+the environment (a `.env` file next to `docker-compose.yml`) and hand the code to
+people you want to let in. The login screen has a "Sign up" toggle that asks for
+the code. Leave `VV_INVITE_CODE` unset to disable sign-up entirely.
+
+```
+# /opt/vitalvortex/.env
+VV_INVITE_CODE=some-shared-secret
+```
+
+You can also create or reset accounts directly from the CLI (no invite needed):
 
 ```bash
-# locally, or inside the running container with `docker compose exec vitalvortex …`
+# locally, or inside the container with `docker compose exec vitalvortex …`
 flask --app app seed-user her@email.com "her-password"
-flask --app app seed-user him@email.com "his-password"
+flask --app app list-users
 ```
 
 Re-running `seed-user` for an existing email just resets that user's password.
+
+### Per-user settings
+
+Profile (sex, age, height, weight, goals), custom macro goals, and theme are
+stored server-side per user (a `settings` JSON blob), so they follow a person
+across devices. The BMR calculation branches on sex (Mifflin-St Jeor), so goals
+are correct for any user — not just the original single female user the app was
+first written for. A brand-new account is prompted to fill in its profile on
+first login rather than inheriting placeholder defaults.
+
+> Note: the original Google Sheet stored only foods/plan/history, never the
+> profile (that lived in the browser). So after importing, the first login on the
+> new app will prompt for profile setup once.
 
 ---
 

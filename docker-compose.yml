@@ -6,6 +6,10 @@ services:
     image: rythious/vitalvortex:latest
     build: .
     restart: unless-stopped
+    environment:
+      # Shared invite code for self-serve sign-up. Set it in a .env file next to
+      # this compose file (VV_INVITE_CODE=...); leave unset to disable sign-up.
+      - VV_INVITE_CODE=${VV_INVITE_CODE:-}
     ports:
       - "127.0.0.1:8082:8080"
     volumes:
