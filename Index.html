@@ -310,6 +310,25 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
 </style>
 </head>
 <body>
+<div id="loginOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:#10121a;align-items:center;justify-content:center;padding:24px">
+  <form id="loginForm" onsubmit="return submitLogin(event)" style="width:100%;max-width:340px;text-align:center">
+    <div style="font-size:26px;letter-spacing:3px;font-weight:700;color:#e8e6f0">VITAL VORTEX</div>
+    <div style="font-size:12px;letter-spacing:2px;opacity:0.55;margin-bottom:28px;color:#e8e6f0">MACRO TRACKER</div>
+    <input id="loginEmail" type="email" autocomplete="username" placeholder="email" required
+      style="width:100%;box-sizing:border-box;padding:12px 14px;margin-bottom:10px;border-radius:10px;border:1px solid #2c2f3e;background:#1a1d28;color:#e8e6f0;font-size:15px">
+    <input id="loginPassword" type="password" autocomplete="current-password" placeholder="password" required
+      style="width:100%;box-sizing:border-box;padding:12px 14px;margin-bottom:14px;border-radius:10px;border:1px solid #2c2f3e;background:#1a1d28;color:#e8e6f0;font-size:15px">
+    <input id="loginInvite" type="text" autocomplete="off" placeholder="invite code"
+      style="display:none;width:100%;box-sizing:border-box;padding:12px 14px;margin-bottom:14px;border-radius:10px;border:1px solid #2c2f3e;background:#1a1d28;color:#e8e6f0;font-size:15px">
+    <button type="submit" id="loginBtn"
+      style="width:100%;padding:12px;border-radius:10px;border:none;background:#6c5ce7;color:#fff;font-size:15px;font-weight:600;cursor:pointer">Sign in</button>
+    <div id="loginError" style="color:#ff6b6b;font-size:13px;margin-top:12px;min-height:16px"></div>
+    <div style="margin-top:6px;font-size:13px;color:#8b7fab">
+      <span id="authToggleText">Need an account?</span>
+      <a href="#" id="authToggleLink" onclick="toggleAuthMode(event)" style="color:#a855f7;text-decoration:none;font-weight:600">Sign up</a>
+    </div>
+  </form>
+</div>
 <div class="app">
   <div class="top-bar">
     <div>
@@ -319,6 +338,7 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
       <div style="display:flex;align-items:center;gap:8px">
         <button onclick="openProfile()" style="background:transparent;border:none;cursor:pointer;font-size:18px;padding:2px 4px;opacity:0.7" title="My Profile">⚙️</button>
+        <button onclick="doLogout()" style="background:transparent;border:none;cursor:pointer;font-size:16px;padding:2px 4px;opacity:0.7" title="Sign out">⏻</button>
         <div class="sync-status"><div class="sync-dot" id="syncDot"></div><span id="syncLabel">connecting...</span></div>
       </div>
       <div class="date-display" id="dateDisplay"></div>
@@ -367,6 +387,23 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
       <button onclick="toggleMenuAddForm()" id="menuAddToggle" style="background:var(--lavender);border:1px solid var(--lav-mid);color:var(--lav-dark);font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;padding:6px 12px;border-radius:var(--radius-sm);cursor:pointer">✦ Add New Food</button>
     </div>
     <div id="menuAddForm" style="display:none;background:var(--lavender);border:1px solid rgba(168,85,247,0.3);border-radius:var(--radius);padding:14px;margin-bottom:12px">
+      <div id="fdcSearchSection" style="display:none;margin-bottom:14px;padding-bottom:14px;border-bottom:1px dashed rgba(168,85,247,0.3)">
+        <div class="form-label" style="margin-bottom:6px">🔎 Search food database</div>
+        <div style="display:flex;gap:8px">
+          <input class="form-input" id="fdcSearch" placeholder="e.g. greek yogurt" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();runFdcSearch();}">
+          <button onclick="runFdcSearch()" id="fdcSearchBtn" style="padding:0 16px;background:var(--lav-mid);border:none;border-radius:var(--radius-sm);color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:'Nunito',sans-serif">Search</button>
+        </div>
+        <div id="fdcResults" style="margin-top:8px;max-height:240px;overflow-y:auto"></div>
+        <div id="fdcServingPicker" style="display:none;margin-top:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px">
+          <div class="form-label" style="margin-bottom:6px">Serving</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select class="form-input" id="fdcServing" style="flex:1;cursor:pointer" onchange="onFdcServingChange()"></select>
+            <input class="form-input" id="fdcGrams" type="number" min="1" style="width:90px" oninput="onFdcGramsChange()">
+            <span style="font-size:12px;color:var(--muted)">g</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px">Pick a serving or type grams — the macros below fill in automatically. Adjust anything, then Save.</div>
+        </div>
+      </div>
       <div class="form-grid">
         <div class="form-group full"><div class="form-label">Food Name</div><input class="form-input" id="mf-name" placeholder="e.g. Greek Yogurt"></div>
         <div class="form-group full"><div class="form-label">Portion Size</div><input class="form-input" id="mf-portion" placeholder="e.g. 1 cup (227g)"></div>
@@ -440,15 +477,21 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
     <div class="add-form" style="border-color:rgba(191,95,255,0.3)">
       <div class="form-title">My Profile</div>
       <div class="section-title" style="margin-top:0;margin-bottom:8px">App Style</div>
-      <select class="theme-select" id="themeSelect" onchange="applyTheme(this.value)" style="width:100%;padding:10px 12px;font-size:13px;margin-bottom:8px">
+      <select class="theme-select" id="themeSelect" onchange="onThemeChange(this.value)" style="width:100%;padding:10px 12px;font-size:13px;margin-bottom:8px">
         <option value="cosmic-lisa-frank">🌌 Cosmic Lisa Frank</option>
       </select>
       <div class="section-title" style="margin-bottom:8px">Body Stats</div>
       <div class="form-grid">
-        <div class="form-group"><div class="form-label">Age</div><input class="form-input" id="p-age" type="number" min="1" placeholder="38"></div>
-        <div class="form-group"><div class="form-label">Height (inches)</div><input class="form-input" id="p-height" type="number" min="1" placeholder="63"></div>
-        <div class="form-group"><div class="form-label">Current Weight (lbs)</div><input class="form-input" id="p-weight" type="number" min="1" placeholder="194"></div>
-        <div class="form-group"><div class="form-label">Goal Weight (lbs)</div><input class="form-input" id="p-goal" type="number" min="1" placeholder="165"></div>
+        <div class="form-group full"><div class="form-label">Sex (for metabolic rate)</div>
+          <select class="form-input" id="p-sex" style="cursor:pointer">
+            <option value="female">Female</option>
+            <option value="male">Male</option>
+          </select>
+        </div>
+        <div class="form-group"><div class="form-label">Age</div><input class="form-input" id="p-age" type="number" min="1" placeholder="30"></div>
+        <div class="form-group"><div class="form-label">Height (inches)</div><input class="form-input" id="p-height" type="number" min="1" placeholder="66"></div>
+        <div class="form-group"><div class="form-label">Current Weight (lbs)</div><input class="form-input" id="p-weight" type="number" min="1" placeholder="160"></div>
+        <div class="form-group"><div class="form-label">Goal Weight (lbs)</div><input class="form-input" id="p-goal" type="number" min="1" placeholder="150"></div>
         <div class="form-group full"><div class="form-label">Activity Level</div>
           <select class="form-input" id="p-activity" style="cursor:pointer">
             <option value="1.2">Sedentary (desk job, little exercise)</option>
@@ -502,18 +545,24 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
 <div class="toast" id="toast"></div>
 
 <script>
-// ─── ENVIRONMENT DETECTION ────────────────────────────────────────────────
-// When running locally via server.py, API calls go to http://localhost:8765/api.
-// When running as a deployed Google Apps Script web app, API calls use
-// google.script.run (the built-in Apps Script bridge) instead of fetch.
-const IS_LOCAL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
-const API_URL  = 'http://localhost:8765/api'; // only used when IS_LOCAL is true
+// ─── API ──────────────────────────────────────────────────────────────────
+// The app and its API are served from the same origin (Flask backend), so all
+// calls are plain same-origin fetches to /api. Cookies (the login session) ride
+// along automatically. No environment branching needed.
+const API_URL = '/api';
+let currentUserEmail = null; // set after login; used to namespace the local cache
+let searchEnabled = false;   // true when the server has a USDA API key configured
 
 // ─── PROFILE & GOAL CALCULATOR ─────────────────────────────────────────────
-let userProfile = {age:38, heightIn:63, weightLbs:194, goalLbs:165, activity:1.375, ratePerWeek:1500};
+// Neutral defaults for a brand-new account — NOT any real person's stats. A new
+// user is prompted to fill in their own profile on first login.
+let userProfile = {sex:'female', age:30, heightIn:66, weightLbs:160, goalLbs:150, activity:1.375, ratePerWeek:500};
 let customGoals = {}; // overrides: {cal, protein, fat, carb} — empty means use calcGoals()
+let currentThemeId = 'cosmic-lisa-frank';
+let profileConfigured = false; // true once this user has saved a profile on the server
 
 function loadProfile(){
+  // Fast paint from the local cache; loadSettingsFromServer() is authoritative.
   try{
     const p=localStorage.getItem('vitalvortex_profile');
     if(p) userProfile=JSON.parse(p);
@@ -521,11 +570,34 @@ function loadProfile(){
     if(c) customGoals=JSON.parse(c);
   }catch(e){}
 }
-function saveProfileLocal(){
+
+// Persist personal settings (profile + custom goals + theme) both to the local
+// cache and to the server, so they follow this user across devices.
+function persistSettings(){
   try{
     localStorage.setItem('vitalvortex_profile',JSON.stringify(userProfile));
     localStorage.setItem('vitalvortex_custom_goals',JSON.stringify(customGoals));
+    localStorage.setItem('vitalvortex_theme',currentThemeId);
   }catch(e){}
+  const blob=JSON.stringify({profile:userProfile, customGoals, theme:currentThemeId});
+  apiFetch(API_URL,{method:'POST',body:JSON.stringify({action:'savesettings',blob})});
+}
+
+// Pull this user's settings from the server. Returns false if they have none
+// yet (a new account), so the caller can prompt them to set up their profile.
+async function loadSettingsFromServer(){
+  const data=await apiFetch(API_URL+'?action=loadsettings');
+  if(data && data.ok && data.blob){
+    try{
+      const s=JSON.parse(data.blob);
+      if(s.profile) userProfile=s.profile;
+      customGoals = s.customGoals || {};
+      if(s.theme) currentThemeId=s.theme;
+      profileConfigured=true;
+      return true;
+    }catch(e){}
+  }
+  return false;
 }
 function activeGoals(){
   // Returns the goals actually in use: custom overrides on top of calculated values
@@ -542,8 +614,9 @@ function activeGoals(){
   };
 }
 function calcGoals(profile){
-  // Mifflin-St Jeor BMR for female
-  const bmr = 10*(profile.weightLbs/2.205) + 6.25*(profile.heightIn*2.54) - 5*profile.age - 161;
+  // Mifflin-St Jeor BMR. The sex constant is +5 for male, -161 for female.
+  const sexConst = profile.sex === 'male' ? 5 : -161;
+  const bmr = 10*(profile.weightLbs/2.205) + 6.25*(profile.heightIn*2.54) - 5*profile.age + sexConst;
   const tdee = Math.round(bmr * profile.activity);
   const cal = Math.max(1200, tdee - profile.ratePerWeek);
   const protein = Math.round(profile.weightLbs * 0.7); // 0.7g per lb
@@ -554,6 +627,7 @@ function calcGoals(profile){
   return {cal, protein, fat, carb, sugar, fiber, tdee, bmr:Math.round(bmr)};
 }
 function renderProfilePage(){
+  document.getElementById('p-sex').value = userProfile.sex || 'female';
   document.getElementById('p-age').value = userProfile.age;
   document.getElementById('p-height').value = userProfile.heightIn;
   document.getElementById('p-weight').value = userProfile.weightLbs;
@@ -616,7 +690,7 @@ function saveCustomGoals(){
   MACRO_GOALS.fat     = a.fat;
   MACRO_GOALS.carb    = a.carb;
   proteinGoal = a.protein;
-  saveProfileLocal();
+  persistSettings();
   saveLocal();
   savePlanToSheet();
   renderProfilePage();
@@ -633,7 +707,7 @@ function resetCustomGoals(){
   MACRO_GOALS.sugar   = g.sugar;
   MACRO_GOALS.fiber   = g.fiber;
   proteinGoal = g.protein;
-  saveProfileLocal();
+  persistSettings();
   saveLocal();
   renderProfilePage();
   renderPlanner();
@@ -648,16 +722,18 @@ function closeProfile(){
   document.getElementById('profileOverlay').style.display='none';
 }
 function saveProfile(){
-  const age=parseInt(document.getElementById('p-age').value)||38;
-  const heightIn=parseFloat(document.getElementById('p-height').value)||63;
-  const weightLbs=parseFloat(document.getElementById('p-weight').value)||194;
-  const goalLbs=parseFloat(document.getElementById('p-goal').value)||165;
+  const sex=document.getElementById('p-sex').value||'female';
+  const age=parseInt(document.getElementById('p-age').value)||30;
+  const heightIn=parseFloat(document.getElementById('p-height').value)||66;
+  const weightLbs=parseFloat(document.getElementById('p-weight').value)||160;
+  const goalLbs=parseFloat(document.getElementById('p-goal').value)||150;
   const activity=parseFloat(document.getElementById('p-activity').value)||1.375;
-  const ratePerWeek=parseInt(document.getElementById('p-rate').value)||1500;
-  userProfile={age,heightIn,weightLbs,goalLbs,activity,ratePerWeek};
+  const ratePerWeek=parseInt(document.getElementById('p-rate').value)||500;
+  userProfile={sex,age,heightIn,weightLbs,goalLbs,activity,ratePerWeek};
+  profileConfigured=true;
   // Recalculate clears any custom overrides so fresh formula values apply
   customGoals={};
-  saveProfileLocal();
+  persistSettings();
   const g=calcGoals(userProfile);
   MACRO_GOALS.cal=g.cal;
   MACRO_GOALS.protein=g.protein;
@@ -694,12 +770,15 @@ const THEMES = {
 function applyTheme(id){
   const t = THEMES[id];
   if(!t) return;
+  currentThemeId = id;
   const root = document.documentElement;
   Object.entries(t).forEach(([k,v])=>{ if(k!=='bodyBg') root.style.setProperty(k,v); });
   if(t.bodyBg) document.body.style.backgroundImage = t.bodyBg;
   document.getElementById('themeSelect').value = id;
   try{ localStorage.setItem('vitalvortex_theme', id); }catch(e){}
 }
+// User-initiated theme change from the dropdown: apply and sync to the server.
+function onThemeChange(id){ applyTheme(id); persistSettings(); }
 
 const STARTER_FOODS = [
   {id:1,  name:"Adventureful Cookie",                       portion:"1 cookie",         cal:60,  fat:3,   carb:8,    fiber:0.5, sugar:4.5,  protein:0.5},
@@ -953,41 +1032,87 @@ function togglePeriodDate(key){
 }
 
 // ─── API CALLS ───────────────────────────────────────────────────────────────────
-// Unified API bridge: local calls go to the Python server via fetch;
-// deployed calls use google.script.run (Apps Script's server bridge).
-
-// Wrap google.script.run in a Promise so we can await it like fetch.
-function gsRun(params){
-  return new Promise((resolve) => {
-    google.script.run
-      .withSuccessHandler(result => resolve(result))
-      .withFailureHandler(err => { console.error('gs.run error:', err); resolve(null); })
-      .handleRequest(params);
-  });
+// API bridge: every call is a same-origin fetch to the Flask backend. The login
+// session cookie is sent automatically. A 401 means the session expired/was lost,
+// so we drop back to the login screen.
+async function apiFetch(path, options={}){
+  try{
+    const res = await fetch(path, {credentials:'same-origin', ...options, headers:{'Content-Type':'application/json'}});
+    if(res.status === 401){ showLogin(); return null; }
+    return await res.json();
+  }catch(e){
+    console.error('API error:', e);
+    return null;
+  }
 }
 
-async function apiFetch(path, options={}){
-  if(IS_LOCAL){
-    try{
-      const res = await fetch(path, {...options, headers:{'Content-Type':'application/json'}});
-      return await res.json();
-    }catch(e){
-      console.error('API error:', e);
-      return null;
-    }
-  } else {
-    // Deployed: extract action and body from the call and use google.script.run
-    try{
-      const url = new URL(path, location.href);
-      const action = url.searchParams.get('action') || (options.body ? JSON.parse(options.body).action : '');
-      const body   = options.body ? JSON.parse(options.body) : {};
-      const params = {...body, action};
-      return await gsRun(params);
-    }catch(e){
-      console.error('gsRun error:', e);
-      return null;
-    }
+// ─── AUTH ───────────────────────────────────────────────────────────────────
+function showLogin(){
+  const o=document.getElementById('loginOverlay');
+  o.style.display='flex';
+  document.getElementById('loginError').textContent='';
+  document.getElementById('loginPassword').value='';
+}
+function hideLogin(){ document.getElementById('loginOverlay').style.display='none'; }
+
+let authMode = 'login'; // or 'register'
+function toggleAuthMode(ev){
+  if(ev) ev.preventDefault();
+  authMode = authMode === 'login' ? 'register' : 'login';
+  const registering = authMode === 'register';
+  document.getElementById('loginInvite').style.display = registering ? 'block' : 'none';
+  document.getElementById('loginInvite').required = registering;
+  document.getElementById('loginBtn').textContent = registering ? 'Create account' : 'Sign in';
+  document.getElementById('loginPassword').autocomplete = registering ? 'new-password' : 'current-password';
+  document.getElementById('authToggleText').textContent = registering ? 'Have an account?' : 'Need an account?';
+  document.getElementById('authToggleLink').textContent = registering ? 'Sign in' : 'Sign up';
+  document.getElementById('loginError').textContent = '';
+}
+
+// If a different person signs in on this browser, drop the previous user's
+// cached data so the two never bleed together. The backend is the source of
+// truth, so the new user simply reloads everything fresh.
+function resetCacheForUser(email){
+  const prev = localStorage.getItem('vv_cache_owner');
+  if(prev !== email){
+    Object.keys(localStorage).forEach(k=>{
+      if(k.startsWith('vitalvortex') || /-confirm-\d+$/.test(k)) localStorage.removeItem(k);
+    });
+    localStorage.setItem('vv_cache_owner', email);
   }
+}
+
+async function submitLogin(ev){
+  ev.preventDefault();
+  const btn=document.getElementById('loginBtn');
+  const err=document.getElementById('loginError');
+  btn.disabled=true; err.textContent='';
+  const email=document.getElementById('loginEmail').value.trim();
+  const password=document.getElementById('loginPassword').value;
+  const registering = authMode === 'register';
+  const payload = registering
+    ? {action:'register', email, password, invite:document.getElementById('loginInvite').value.trim()}
+    : {action:'login', email, password};
+  const res=await apiFetch(API_URL,{method:'POST',body:JSON.stringify(payload)});
+  btn.disabled=false;
+  if(res && res.ok){
+    currentUserEmail=res.email;
+    searchEnabled=!!res.searchEnabled;
+    resetCacheForUser(res.email);
+    hideLogin();
+    await startApp();
+  }else{
+    err.textContent = res && res.error
+      ? res.error.charAt(0).toUpperCase()+res.error.slice(1)+'.'
+      : (registering ? 'Could not create account.' : 'Incorrect email or password.');
+  }
+  return false;
+}
+
+async function doLogout(){
+  await apiFetch(API_URL,{method:'POST',body:JSON.stringify({action:'logout'})});
+  currentUserEmail=null;
+  showLogin();
 }
 
 async function loadFoodsFromSheet(){
@@ -1807,10 +1932,16 @@ function toggleMenuAddForm(){
   } else {
     form.style.display='block';
     btn.textContent='✕ Cancel';
+    // Show the database-search section only when the server has a USDA key.
+    document.getElementById('fdcSearchSection').style.display = searchEnabled ? 'block' : 'none';
+    resetFdcSearch();
     // pre-fill name from search if there's a query
     const q=(document.getElementById('menuSearch')||{}).value||'';
-    if(q) document.getElementById('mf-name').value=q;
-    setTimeout(()=>document.getElementById('mf-name').focus(),50);
+    if(q){
+      document.getElementById('mf-name').value=q;
+      if(searchEnabled) document.getElementById('fdcSearch').value=q;
+    }
+    setTimeout(()=>document.getElementById(searchEnabled?'fdcSearch':'mf-name').focus(),50);
   }
 }
 async function addFoodFromMenu(){
@@ -1834,8 +1965,102 @@ async function addFoodFromMenu(){
   document.getElementById('menuAddForm').style.display='none';
   document.getElementById('menuAddToggle').textContent='✦ Add New Food';
   document.getElementById('menuSearch').value='';
+  resetFdcSearch();
   toast('Saving...');await saveFoodsToSheet();renderMenu();toast('✦ '+food.name+' saved!');
 }
+
+// ─── USDA FOOD DATABASE SEARCH ───────────────────────────────────────────────
+// Lets her search USDA FoodData Central and auto-fill the add-food fields below,
+// scaled to a chosen serving. The server proxies the API (key stays server-side).
+let fdcResultsCache = [];
+let fdcSelected = null; // {base:{...per 100g}, name, servings:[{label,grams}]}
+
+function resetFdcSearch(){
+  fdcResultsCache=[]; fdcSelected=null;
+  const r=document.getElementById('fdcResults'); if(r) r.innerHTML='';
+  const p=document.getElementById('fdcServingPicker'); if(p) p.style.display='none';
+}
+
+async function runFdcSearch(){
+  const q=document.getElementById('fdcSearch').value.trim();
+  if(!q) return;
+  const btn=document.getElementById('fdcSearchBtn');
+  const box=document.getElementById('fdcResults');
+  btn.disabled=true;
+  box.innerHTML='<div style="font-size:12px;color:var(--muted);padding:6px 0">Searching…</div>';
+  document.getElementById('fdcServingPicker').style.display='none';
+  const data=await apiFetch(API_URL+'?action=foodsearch&q='+encodeURIComponent(q));
+  btn.disabled=false;
+  if(!data || !data.ok){ box.innerHTML='<div style="font-size:12px;color:var(--muted);padding:6px 0">Search unavailable right now.</div>'; return; }
+  fdcResultsCache=data.results||[];
+  if(!fdcResultsCache.length){ box.innerHTML='<div style="font-size:12px;color:var(--muted);padding:6px 0">No matches found.</div>'; return; }
+  box.innerHTML=fdcResultsCache.map((r,i)=>{
+    const m=r.per100||{};
+    const brand=r.brand?' · <span style="color:var(--lav-dark)">'+fdcEsc(r.brand)+'</span>':'';
+    return '<div onclick="selectFdcFood('+i+')" style="padding:8px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px;cursor:pointer;background:var(--card)">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--text)">'+fdcEsc(r.name)+brand+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-top:2px">per 100g · '+Math.round(m.cal||0)+' cal · P:'+fdcRound(m.protein)+'g · F:'+fdcRound(m.fat)+'g · C:'+fdcRound(m.carb)+'g</div>'
+      +'</div>';
+  }).join('');
+}
+
+async function selectFdcFood(i){
+  const r=fdcResultsCache[i]; if(!r) return;
+  const data=await apiFetch(API_URL+'?action=fooddetail&fdcId='+encodeURIComponent(r.fdcId));
+  let di=0;
+  if(data && data.ok){
+    fdcSelected={base:data.base||{}, name:data.name||r.name,
+      servings:(data.servings&&data.servings.length)?data.servings:[{label:'100 g',grams:100}]};
+    di=Math.min(data.defaultIndex||0, fdcSelected.servings.length-1);
+  } else {
+    // Some USDA foods have no detail record (404) — fall back to the search
+    // result's per-100g macros so the food is still addable (grams only).
+    fdcSelected={base:r.per100||{}, name:r.name, servings:[{label:'100 g',grams:100}]};
+  }
+  const sel=document.getElementById('fdcServing');
+  sel.innerHTML=fdcSelected.servings.map((s,idx)=>'<option value="'+idx+'">'+fdcEsc(s.label)+'</option>').join('')
+    +'<option value="custom">Custom grams…</option>';
+  sel.value=String(di);
+  document.getElementById('fdcServingPicker').style.display='block';
+  applyFdcServing(fdcSelected.servings[di].grams, fdcSelected.servings[di].label);
+}
+
+function onFdcServingChange(){
+  if(!fdcSelected) return;
+  const sel=document.getElementById('fdcServing');
+  if(sel.value==='custom'){
+    applyFdcServing(parseFloat(document.getElementById('fdcGrams').value)||100, null);
+  } else {
+    const s=fdcSelected.servings[parseInt(sel.value)];
+    applyFdcServing(s.grams, s.label);
+  }
+}
+
+function onFdcGramsChange(){
+  if(!fdcSelected) return;
+  document.getElementById('fdcServing').value='custom';
+  applyFdcServing(parseFloat(document.getElementById('fdcGrams').value)||0, null);
+}
+
+// Fill the manual mf-* fields from the selected food, scaled to `grams`.
+function applyFdcServing(grams, label){
+  if(!fdcSelected) return;
+  grams=parseFloat(grams)||0;
+  document.getElementById('fdcGrams').value=fdcRound(grams);
+  const b=fdcSelected.base, f=grams/100;
+  document.getElementById('mf-name').value=fdcSelected.name;
+  document.getElementById('mf-portion').value=label || (fdcRound(grams)+' g');
+  document.getElementById('mf-cal').value=Math.round((b.cal||0)*f);
+  document.getElementById('mf-fat').value=fdcRound((b.fat||0)*f);
+  document.getElementById('mf-carb').value=fdcRound((b.carb||0)*f);
+  document.getElementById('mf-fiber').value=fdcRound((b.fiber||0)*f);
+  document.getElementById('mf-sugar').value=fdcRound((b.sugar||0)*f);
+  document.getElementById('mf-protein').value=fdcRound((b.protein||0)*f);
+}
+
+function fdcRound(n){ n=parseFloat(n)||0; return Math.round(n*10)/10; }
+function fdcEsc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
 function toggleEdit(id){if(editingId===id){cancelEdit();return;}editingId=id;renderMenu();setTimeout(()=>{const el=document.getElementById('medit-'+id);if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});},50);}
 function cancelEdit(){editingId=null;renderMenu();}
 
@@ -2082,9 +2307,25 @@ async function addFood(){
   toast('Saving...');await saveFoodsToSheet();toast('✦ '+food.name+' saved!');
 }
 
+// Boot: only start the app if there's a valid login session; otherwise show the
+// login screen. submitLogin() calls startApp() once sign-in succeeds.
 async function init(){
-  try{ const t=localStorage.getItem('vitalvortex_theme'); if(t) applyTheme(t); }catch(e){}
-  loadProfile();
+  const me=await apiFetch(API_URL+'?action=me');
+  if(me && me.ok){
+    currentUserEmail=me.email;
+    searchEnabled=!!me.searchEnabled;
+    resetCacheForUser(me.email);
+    await startApp();
+  }else{
+    showLogin();
+  }
+}
+
+async function startApp(){
+  loadProfile(); // fast paint from local cache
+  // Authoritative settings come from the server (profile, goals, theme).
+  const hadSettings = await loadSettingsFromServer();
+  applyTheme(currentThemeId);
   // apply active goals on startup (custom overrides if set, otherwise formula)
   const g=activeGoals();
   MACRO_GOALS.cal=g.cal;MACRO_GOALS.protein=g.protein;MACRO_GOALS.fat=g.fat;MACRO_GOALS.carb=g.carb;MACRO_GOALS.sugar=g.sugar;MACRO_GOALS.fiber=g.fiber;
@@ -2094,11 +2335,11 @@ async function init(){
   renderPlanner();
   const hasData = await loadFoodsFromSheet();
   if(!hasData){
-    state.foods = STARTER_FOODS;
-    state.nextId = 43;
-    toast('First launch — saving your 42 starter foods...');
+    state.foods = STARTER_FOODS.map(f=>({...f}));
+    state.nextId = Math.max(...STARTER_FOODS.map(f=>f.id)) + 1;
+    toast('Welcome! Adding '+STARTER_FOODS.length+' starter foods...');
     await saveFoodsToSheet();
-    toast('✦ All 42 foods saved locally!');
+    toast('✦ '+STARTER_FOODS.length+' starter foods added!');
   }
   await loadPlanFromSheet();
   // Seed recents from current plan meals if recents are empty
@@ -2106,6 +2347,12 @@ async function init(){
   renderPlanner();
   await loadLogFromSheet();
   await loadPeriodsFromSheet();
+  // Brand-new account with no saved profile: prompt them to set it up so their
+  // goals are based on their own body, not the placeholder defaults.
+  if(!hadSettings && !profileConfigured){
+    openProfile();
+    toast('Set up your profile to get accurate goals.');
+  }
 }
 
 function seedRecentsFromPlan(){

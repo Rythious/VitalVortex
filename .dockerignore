@@ -1,0 +1,7 @@
+.git
+__pycache__/
+*.pyc
+keys/
+*.db
+vitalvortex_data.json
+_smoke/
