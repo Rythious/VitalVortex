@@ -71,20 +71,15 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
 .macro-val { font-size: 20px; font-weight: 800; color: var(--text); line-height: 1.1; }
 .macro-goal-lbl { font-size: 9px; color: var(--muted); font-weight: 600; }
 .macro-lbl { font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .3px; }
-/* Black hole card */
-.macro-card.blackhole { border: 2px solid #1a0033; background: #000 !important; }
-.macro-card.blackhole .macro-val { color: transparent; text-shadow: none; }
-.macro-card.blackhole .macro-goal-lbl { color: transparent; }
-.macro-card.blackhole .macro-lbl { color: rgba(80,0,120,0.6); }
-@keyframes blackholePull {
-  0%   { transform: scale(1) rotate(0deg); filter: brightness(1); }
-  40%  { transform: scale(0.97) rotate(-1deg); filter: brightness(0.7); }
-  100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+/* Galaxy card (over-goal bad macro) */
+.macro-card.blackhole { border: 2px solid rgba(255,180,80,0.5); }
+@keyframes galaxySpin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
-@keyframes spaghetti {
-  0%   { transform: scaleX(1) scaleY(1) translateY(0); opacity: 1; }
-  60%  { transform: scaleX(0.3) scaleY(1.6) translateY(4px); opacity: 0.5; }
-  100% { transform: scaleX(0.05) scaleY(2) translateY(8px); opacity: 0; }
+@keyframes galaxyPulse {
+  0%,100% { opacity: 0.85; }
+  50%      { opacity: 1; }
 }
 
 /* Protein goal */
@@ -227,20 +222,20 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
 .scanner-sub { font-size: 13px; color: var(--mint-dark); opacity: .7; }
 
 /* History / Calendar */
-.cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.cal-nav-btn { border: 1px solid var(--border); background: var(--card); border-radius: var(--radius-sm); padding: 8px 18px; font-size: 16px; cursor: pointer; font-family: 'Nunito', sans-serif; font-weight: 700; color: var(--text); }
+.cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.cal-nav-btn { border: 1px solid var(--border); background: var(--card); border-radius: var(--radius-sm); padding: 5px 14px; font-size: 14px; cursor: pointer; font-family: 'Nunito', sans-serif; font-weight: 700; color: var(--text); }
 .cal-nav-btn:active { background: var(--lavender); color: var(--lav-dark); }
-.cal-month-label { font-size: 15px; font-weight: 700; color: var(--text); }
-.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); gap: 3px; margin-bottom: 12px; }
-.cal-day-header { text-align: center; font-size: 10px; font-weight: 700; color: var(--muted); padding: 4px 0; text-transform: uppercase; letter-spacing: .4px; }
-.cal-day { height: 38px; border-radius: var(--radius-sm); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: var(--muted); background: transparent; cursor: default; position: relative; }
+.cal-month-label { font-size: 13px; font-weight: 700; color: var(--text); }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); gap: 2px; margin-bottom: 10px; }
+.cal-day-header { text-align: center; font-size: 9px; font-weight: 700; color: var(--muted); padding: 3px 0; text-transform: uppercase; letter-spacing: .3px; }
+.cal-day { height: 28px; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--muted); background: transparent; cursor: default; position: relative; }
 .cal-day.has-log { background: var(--lavender); color: var(--lav-dark); cursor: pointer; }
 .cal-day.has-log:active { background: var(--lav-mid); color: #fff; }
 .cal-day.today { border: 2px solid var(--vv-accent); color: var(--vv-accent); font-weight: 800; }
 .cal-day.today.has-log { background: var(--lavender); }
 .cal-day.selected { background: var(--vv-accent); color: #fff; }
 .cal-day.empty { visibility: hidden; }
-.cal-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--vv-accent); margin-top: 2px; }
+.cal-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--vv-accent); margin-top: 1px; }
 .cal-day.selected .cal-dot { background: #fff; }
 
 .log-detail { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
@@ -265,6 +260,41 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
 @keyframes spin { to { transform: rotate(360deg); } }
 .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: #1A0A2E; color: #E0AAFF; border: 1px solid rgba(191,95,255,0.4); padding: 12px 22px; border-radius: 24px; font-size: 14px; font-weight: 600; z-index: 300; opacity: 0; transition: opacity .3s; pointer-events: none; white-space: nowrap; }
 .toast.show { opacity: 1; }
+
+/* Cycle phase banner */
+.cycle-banner { border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; border: 1px solid rgba(255,45,155,0.3); background: linear-gradient(135deg, rgba(45,10,46,0.7), rgba(26,10,46,0.5)); }
+.cycle-banner-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.cycle-phase-name { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; color: #FF80CC; }
+.cycle-phase-dot { width: 12px; height: 12px; border-radius: 50%; background: #FF2D9B; flex-shrink: 0; box-shadow: 0 0 6px rgba(255,45,155,0.6); }
+.cycle-phase-dot.follicular { background: #00B4FF; box-shadow: 0 0 6px rgba(0,180,255,0.6); }
+.cycle-phase-dot.ovulation { background: #00FFD4; box-shadow: 0 0 6px rgba(0,255,212,0.6); }
+.cycle-phase-dot.luteal { background: #FFD600; box-shadow: 0 0 6px rgba(255,214,0,0.6); }
+.cycle-phase-name.follicular { color: #80DAFF; }
+.cycle-phase-name.ovulation { color: #7FFFEE; }
+.cycle-phase-name.luteal { color: #FFE97A; }
+.cycle-change-btn { font-size: 11px; color: var(--vv-accent); font-weight: 700; border: 1px solid rgba(191,95,255,0.4); border-radius: 6px; padding: 4px 10px; background: transparent; cursor: pointer; font-family: 'Nunito', sans-serif; }
+.cycle-focus-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 7px; }
+.cycle-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.cycle-tag { border-radius: 20px; padding: 4px 11px; font-size: 11px; font-weight: 700; cursor: pointer; }
+.cycle-expand-btn { font-size: 11px; color: var(--vv-accent); font-weight: 700; background: transparent; border: none; cursor: pointer; font-family: 'Nunito', sans-serif; margin-top: 9px; padding: 0; display: block; }
+.cycle-detail { margin-top: 10px; border-top: 1px solid rgba(168,85,247,0.2); padding-top: 10px; display: none; }
+.cycle-detail.open { display: block; }
+.cycle-nutrient-row { margin-bottom: 9px; }
+.cycle-nutrient-name { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+.cycle-food-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+.cycle-food-chip { border-radius: 6px; padding: 3px 9px; font-size: 11px; color: #F0E6FF; }
+/* phase selector overlay */
+.cycle-phase-overlay { position: fixed; inset: 0; background: rgba(2,4,20,0.75); z-index: 200; display: none; align-items: flex-end; justify-content: center; }
+.cycle-phase-overlay.open { display: flex; }
+.cycle-phase-sheet { background: var(--card); border-radius: var(--radius) var(--radius) 0 0; width: 100%; max-width: 680px; padding: 20px 16px 50px; }
+.cycle-sheet-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
+.cycle-phase-option { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--card); margin-bottom: 8px; cursor: pointer; }
+.cycle-phase-option:active { background: var(--lavender); }
+.cycle-phase-option.selected { border-color: var(--vv-accent); background: var(--lavender); }
+.cpo-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.cpo-text { flex: 1; }
+.cpo-name { font-size: 14px; font-weight: 700; color: var(--text); }
+.cpo-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
 /* Theme dropdown */
 .theme-select { background: rgba(191,95,255,0.12); border: 1px solid rgba(191,95,255,0.35); color: var(--text); font-family: 'Nunito', sans-serif; font-size: 11px; font-weight: 700; border-radius: 8px; padding: 4px 8px; cursor: pointer; outline: none; }
@@ -346,7 +376,7 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
       <button class="cal-nav-btn" onclick="changeMonth(1)">&#8594;</button>
     </div>
     <div class="cal-grid" id="calGrid"></div>
-    <div id="logDetail"><div class="no-log-msg">Tap a highlighted date to view that day's summary.</div></div>
+    <div id="logDetail"></div>
   </div>
 
   <!-- MENU -->
@@ -414,6 +444,30 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
     </div>
   </div>
 </div>
+
+  <!-- CYCLE PHASE SHEET -->
+  <div class="cycle-phase-overlay" id="cyclePhaseSheet">
+    <div class="cycle-phase-sheet">
+      <div class="cycle-sheet-title">🌙 Select your cycle phase</div>
+      <div class="cycle-phase-option" data-phase="menstrual" onclick="selectCyclePhase('menstrual')">
+        <div class="cpo-dot" style="background:#FF2D9B"></div>
+        <div class="cpo-text"><div class="cpo-name">🌸 Menstrual</div><div class="cpo-desc">Day 1–5 · Rest & replenish</div></div>
+      </div>
+      <div class="cycle-phase-option" data-phase="follicular" onclick="selectCyclePhase('follicular')">
+        <div class="cpo-dot" style="background:#00B4FF"></div>
+        <div class="cpo-text"><div class="cpo-name">🌱 Follicular</div><div class="cpo-desc">Day 6–13 · Build & energize</div></div>
+      </div>
+      <div class="cycle-phase-option" data-phase="ovulation" onclick="selectCyclePhase('ovulation')">
+        <div class="cpo-dot" style="background:#00FFD4"></div>
+        <div class="cpo-text"><div class="cpo-name">✨ Ovulation</div><div class="cpo-desc">Day 14–17 · Peak energy</div></div>
+      </div>
+      <div class="cycle-phase-option" data-phase="luteal" onclick="selectCyclePhase('luteal')">
+        <div class="cpo-dot" style="background:#FFD600"></div>
+        <div class="cpo-text"><div class="cpo-name">🌙 Luteal</div><div class="cpo-desc">Day 18–28 · Calm & support</div></div>
+      </div>
+      <button onclick="closeCycleSheet()" style="width:100%;margin-top:12px;padding:13px;background:transparent;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--muted);font-weight:700;font-size:14px;cursor:pointer;font-family:'Nunito',sans-serif">Cancel</button>
+    </div>
+  </div>
 
   <!-- PROFILE PANEL -->
   <div id="profileOverlay" style="display:none;position:fixed;inset:0;background:rgba(2,4,20,0.75);z-index:200;display:none;align-items:flex-end;justify-content:center">
@@ -638,6 +692,7 @@ function saveCustomGoals(){
   proteinGoal = a.protein;
   persistSettings();
   saveLocal();
+  savePlanToSheet();
   renderProfilePage();
   renderPlanner();
   toast('✦ Goals saved!');
@@ -688,6 +743,7 @@ function saveProfile(){
   MACRO_GOALS.fiber=g.fiber;
   proteinGoal=g.protein;
   saveLocal();
+  savePlanToSheet();
   renderProfilePage();
   renderPlanner();
   toast('✦ Goals recalculated!');
@@ -787,40 +843,65 @@ const GOOD_MACROS = new Set(['protein','fiber']); // more is better
 const BAD_MACROS  = new Set(['cal','carb','sugar','fat']); // over = bad
 
 function blackholeSVG(){
-  return `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none">
+  const uid = Math.random().toString(36).slice(2,7);
+  return `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;animation:galaxyPulse 3.5s ease-in-out infinite">
     <defs>
-      <radialGradient id="bhGlow" cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stop-color="#000" stop-opacity="1"/>
-        <stop offset="45%" stop-color="#1a0040" stop-opacity="1"/>
-        <stop offset="70%" stop-color="#4400aa" stop-opacity="0.6"/>
-        <stop offset="85%" stop-color="#7700ff" stop-opacity="0.3"/>
+      <radialGradient id="bulge${uid}" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"  stop-color="#fff8e0" stop-opacity="0"/>
+        <stop offset="20%" stop-color="#ffe8a0" stop-opacity="0"/>
+        <stop offset="40%" stop-color="#ffaa44" stop-opacity="0.09"/>
+        <stop offset="60%" stop-color="#cc5500" stop-opacity="0.28"/>
+        <stop offset="80%" stop-color="#550011" stop-opacity="0.50"/>
+        <stop offset="100%" stop-color="#1a0004" stop-opacity="0.78"/>
+      </radialGradient>
+      <radialGradient id="disk${uid}" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"  stop-color="#ffcc66" stop-opacity="0"/>
+        <stop offset="42%" stop-color="#ff8844" stop-opacity="0.13"/>
+        <stop offset="72%" stop-color="#cc3366" stop-opacity="0.11"/>
         <stop offset="100%" stop-color="transparent" stop-opacity="0"/>
       </radialGradient>
-      <radialGradient id="bhRing" cx="50%" cy="50%" r="50%">
-        <stop offset="55%" stop-color="transparent"/>
-        <stop offset="68%" stop-color="#aa44ff" stop-opacity="0.9"/>
-        <stop offset="74%" stop-color="#ff88ff" stop-opacity="1"/>
-        <stop offset="80%" stop-color="#aa44ff" stop-opacity="0.7"/>
-        <stop offset="100%" stop-color="transparent"/>
-      </radialGradient>
-      <filter id="bhBlur"><feGaussianBlur stdDeviation="1.5"/></filter>
     </defs>
-    <!-- accretion disc glow (blurred ellipse for perspective) -->
-    <ellipse cx="40" cy="44" rx="34" ry="10" fill="none" stroke="#9933ff" stroke-width="5" opacity="0.35" filter="url(#bhBlur)"/>
-    <ellipse cx="40" cy="44" rx="34" ry="10" fill="none" stroke="#ff88ff" stroke-width="2" opacity="0.5" filter="url(#bhBlur)"/>
-    <!-- photon ring -->
-    <circle cx="40" cy="40" r="26" fill="url(#bhRing)" filter="url(#bhBlur)"/>
-    <!-- event horizon -->
-    <circle cx="40" cy="40" r="18" fill="url(#bhGlow)"/>
-    <!-- singularity -->
-    <circle cx="40" cy="40" r="7" fill="#000"/>
-    <!-- lensing streaks being pulled in -->
-    <line x1="10" y1="18" x2="32" y2="36" stroke="#cc66ff" stroke-width="1" opacity="0.5"/>
-    <line x1="70" y1="16" x2="48" y2="35" stroke="#cc66ff" stroke-width="1" opacity="0.5"/>
-    <line x1="6"  y1="52" x2="30" y2="42" stroke="#aa44ff" stroke-width="1" opacity="0.4"/>
-    <line x1="74" y1="54" x2="50" y2="43" stroke="#aa44ff" stroke-width="1" opacity="0.4"/>
-    <line x1="30" y1="6"  x2="38" y2="28" stroke="#ff88ff" stroke-width="0.8" opacity="0.4"/>
-    <line x1="50" y1="6"  x2="42" y2="28" stroke="#ff88ff" stroke-width="0.8" opacity="0.4"/>
+    <ellipse cx="40" cy="40" rx="39" ry="25" fill="url(#disk${uid})"/>
+    <path d="M40,40 C47,32 57,22 66,14 C72,9 78,6 80,8" fill="none" stroke="#ffcc44" stroke-width="4" stroke-linecap="round" opacity="0.18"/>
+    <path d="M40,40 C47,32 57,22 66,14 C72,9 78,6 80,8" fill="none" stroke="#ffe888" stroke-width="1.6" stroke-linecap="round" opacity="0.40"/>
+    <path d="M40,40 C47,32 57,22 66,14 C72,9 78,6 80,8" fill="none" stroke="#fff0aa" stroke-width="0.6" stroke-linecap="round" opacity="0.55"/>
+    <path d="M40,40 C33,48 23,58 14,66 C8,71 2,74 0,72" fill="none" stroke="#ffcc44" stroke-width="4" stroke-linecap="round" opacity="0.18"/>
+    <path d="M40,40 C33,48 23,58 14,66 C8,71 2,74 0,72" fill="none" stroke="#ffe888" stroke-width="1.6" stroke-linecap="round" opacity="0.40"/>
+    <path d="M40,40 C33,48 23,58 14,66 C8,71 2,74 0,72" fill="none" stroke="#fff0aa" stroke-width="0.6" stroke-linecap="round" opacity="0.55"/>
+    <path d="M40,40 C50,45 62,52 72,58 C78,62 80,66 78,70" fill="none" stroke="#ff9966" stroke-width="3" stroke-linecap="round" opacity="0.16"/>
+    <path d="M40,40 C50,45 62,52 72,58 C78,62 80,66 78,70" fill="none" stroke="#ffcc88" stroke-width="1.1" stroke-linecap="round" opacity="0.34"/>
+    <path d="M40,40 C30,35 18,28 8,22 C2,18 0,14 2,10"  fill="none" stroke="#ff9966" stroke-width="3" stroke-linecap="round" opacity="0.16"/>
+    <path d="M40,40 C30,35 18,28 8,22 C2,18 0,14 2,10"  fill="none" stroke="#ffcc88" stroke-width="1.1" stroke-linecap="round" opacity="0.34"/>
+    <circle cx="40" cy="38" r="0.5" fill="#ffe8aa" opacity="0.30"/>
+    <circle cx="43" cy="43" r="0.4" fill="#fff0cc" opacity="0.28"/>
+    <circle cx="37" cy="42" r="0.5" fill="#ffe8aa" opacity="0.26"/>
+    <circle cx="54" cy="30" r="0.7" fill="#ffe888" opacity="0.50"/>
+    <circle cx="59" cy="26" r="0.6" fill="#fff0aa" opacity="0.46"/>
+    <circle cx="28" cy="50" r="0.7" fill="#ffe888" opacity="0.50"/>
+    <circle cx="24" cy="55" r="0.6" fill="#fff0aa" opacity="0.44"/>
+    <circle cx="56" cy="52" r="0.7" fill="#ffcc77" opacity="0.46"/>
+    <circle cx="26" cy="30" r="0.7" fill="#ffcc77" opacity="0.44"/>
+    <circle cx="62" cy="17" r="1.1" fill="#fff0cc" opacity="0.82"/>
+    <circle cx="68" cy="12" r="0.8" fill="#ffe888" opacity="0.76"/>
+    <circle cx="74" cy="8"  r="1.0" fill="#fff8dd" opacity="0.78"/>
+    <circle cx="78" cy="10" r="0.7" fill="#ffddaa" opacity="0.68"/>
+    <circle cx="60" cy="22" r="0.8" fill="#ffe8aa" opacity="0.70"/>
+    <circle cx="16" cy="63" r="1.1" fill="#fff0cc" opacity="0.82"/>
+    <circle cx="11" cy="68" r="0.8" fill="#ffe888" opacity="0.76"/>
+    <circle cx="6"  cy="72" r="1.0" fill="#fff8dd" opacity="0.78"/>
+    <circle cx="4"  cy="67" r="0.7" fill="#ffddaa" opacity="0.68"/>
+    <circle cx="20" cy="59" r="0.8" fill="#ffe8aa" opacity="0.70"/>
+    <circle cx="72" cy="55" r="1.0" fill="#ffcc88" opacity="0.76"/>
+    <circle cx="76" cy="62" r="0.8" fill="#ffe8aa" opacity="0.70"/>
+    <circle cx="78" cy="68" r="0.9" fill="#ffddaa" opacity="0.74"/>
+    <circle cx="6"  cy="16" r="1.0" fill="#ffcc88" opacity="0.76"/>
+    <circle cx="4"  cy="10" r="0.8" fill="#ffe8aa" opacity="0.70"/>
+    <circle cx="2"  cy="8"  r="0.9" fill="#ffddaa" opacity="0.74"/>
+    <circle cx="70" cy="20" r="0.6" fill="#ffe8aa" opacity="0.58"/>
+    <circle cx="14" cy="60" r="0.6" fill="#ffe8aa" opacity="0.56"/>
+    <circle cx="74" cy="60" r="0.5" fill="#ffcc88" opacity="0.52"/>
+    <circle cx="6"  cy="20" r="0.5" fill="#ffcc88" opacity="0.52"/>
+    <ellipse cx="40" cy="40" rx="39" ry="25" fill="url(#bulge${uid})"/>
   </svg>`;
 }
 
@@ -834,7 +915,9 @@ function buildMacroCards(totals){
     const isBad   = BAD_MACROS.has(m.k);
     const crashed = isOver && isBad;
     if(crashed){
-      return `<div class="macro-card ${m.cls} blackhole" style="animation:blackholePull 0.8s ease forwards">${blackholeSVG()}<div class="macro-val" style="position:relative;z-index:3;animation:spaghetti 0.8s ease forwards">${val}</div><div class="macro-goal-lbl" style="position:relative;z-index:3;animation:spaghetti 0.9s ease forwards">/ ${goal}</div><div class="macro-lbl" style="position:relative;z-index:3">${m.lbl}</div></div>`;
+      const rgb = colors[m.k];
+      const bg  = `linear-gradient(to top, rgba(${rgb},0.25) 100%, transparent 100%)`;
+      return `<div class="macro-card ${m.cls} blackhole" style="background:${bg}">${blackholeSVG()}<div class="macro-val" style="position:relative;z-index:3">${val}</div><div class="macro-goal-lbl" style="position:relative;z-index:3">/ ${goal}</div><div class="macro-lbl" style="position:relative;z-index:3">${m.lbl}</div></div>`;
     }
     // good macros: keep color filling even over goal; bad macros under goal: normal fill
     const rgb = colors[m.k];
@@ -852,6 +935,7 @@ let proteinGoal = 100;
 let waterCelebrated = false;
 let editingId = null;
 let dailyLog = {};
+let periodDates = {};
 let calViewDate = new Date();
 let selectedLogDate = null;
 let midnightTimer = null;
@@ -909,6 +993,42 @@ function saveLocal(){
 }
 function saveLogLocal(){
   try{localStorage.setItem('vitalvortex_log',JSON.stringify(dailyLog));}catch(e){}
+}
+function savePeriodLocal(){
+  try{localStorage.setItem('vitalvortex_periods',JSON.stringify(periodDates));}catch(e){}
+}
+function loadPeriodLocal(){
+  try{const p=localStorage.getItem('vitalvortex_periods');if(p)periodDates=JSON.parse(p);}catch(e){}
+}
+async function savePeriodToSheet(dateKey,val){
+  await apiFetch(API_URL,{method:'POST',body:JSON.stringify({action:'log',date:'period_'+dateKey,entry:val?{period:1}:null})});
+}
+async function loadPeriodsFromSheet(){
+  const data=await apiFetch(API_URL+'?action=readlog');
+  if(data&&data.ok&&data.log){
+    periodDates={};
+    Object.keys(data.log).forEach(k=>{
+      if(k.startsWith('period_')){
+        const dateKey=k.replace('period_','');
+        periodDates[dateKey]=true;
+      }
+    });
+    savePeriodLocal();
+  }
+}
+function togglePeriodDate(key){
+  if(periodDates[key]){
+    delete periodDates[key];
+    savePeriodLocal();
+    savePeriodToSheet(key,false);
+    toast('Period marker removed.');
+  } else {
+    periodDates[key]=true;
+    savePeriodLocal();
+    savePeriodToSheet(key,true);
+    toast('✦ Period start marked!');
+  }
+  renderCalendar();
 }
 
 // ─── API CALLS ───────────────────────────────────────────────────────────────────
@@ -1117,7 +1237,7 @@ function showPage(id,btn){
   if(id==='planner')renderPlanner();
   if(id==='tomorrow')renderTomorrow();
   if(id==='menu'){editingId=null;renderMenu();}
-  if(id==='history')renderCalendar();
+  if(id==='history'){renderCalendar();renderWeekSummary();}
 }
 
 function renderPlanner(){
@@ -1135,13 +1255,7 @@ function renderPlanner(){
   html+='<div class="section-title">Daily Totals</div><div class="daily-totals">';
   html+=buildMacroCards(totals);
   html+='</div>';
-  const pct=Math.min(100,Math.round((totals.protein/proteinGoal)*100));
-  const done=totals.protein>=proteinGoal;
-  html+=`<div class="protein-goal-bar">`;
-  html+=`<div class="protein-goal-label">${done?'🎉':'💪'} Protein ${Math.round(totals.protein)}/${proteinGoal}g</div>`;
-  html+=`<div class="protein-goal-track"><div class="protein-goal-fill${done?' done':''}" style="width:${pct}%"></div></div>`;
-  html+=`<button class="protein-goal-edit" onclick="editProteinGoal()">edit goal</button>`;
-  html+='</div>';
+
   html+='<button class="clear-day-btn" onclick="clearDay()">🗓 Save & Clear Today\'s Meals</button>';
   html+='<div class="section-title">Meals</div><div class="meals-grid">';
   MEALS.forEach((m,mi)=>{
@@ -1168,14 +1282,8 @@ function renderPlanner(){
     const mt={cal:0,fat:0,carb:0,sugar:0,fiber:0,protein:0};
     mf.forEach(rawEntry=>{const e=normEntry(rawEntry);const f=state.foods.find(x=>x.id===e.id);const mult=e.qty*e.frac;if(f){mt.cal+=f.cal*mult;mt.fat+=f.fat*mult;mt.carb+=f.carb*mult;mt.sugar+=f.sugar*mult;mt.fiber+=f.fiber*mult;mt.protein+=f.protein*mult;}});
     const macroRow = mf.length>0 ? `<div style="font-size:10px;color:var(--muted);font-weight:600;margin-top:2px;opacity:0.85">Fat:${Math.round(mt.fat)}g &middot; C:${Math.round(mt.carb)}g &middot; Fb:${Math.round(mt.fiber)}g &middot; Sg:${Math.round(mt.sugar)}g &middot; P:${Math.round(mt.protein)}g</div>` : '';
-    const isConfirmed = state.confirmedMeals[mi];
-    const hasItems = mf.length > 0;
-    // only show confirm button if meal has items, not yet confirmed, AND not already confirmed today
-    const confirmKey = todayKey()+'-confirm-'+mi;
-    const confirmedToday = localStorage.getItem(confirmKey) === '1';
-    const confirmBtn = hasItems && !isConfirmed && !confirmedToday ? `<button onclick="confirmMeal(${mi})" style="margin-top:8px;width:100%;padding:9px;border:1.5px solid rgba(0,221,68,0.4);border-radius:var(--radius-sm);background:rgba(0,221,68,0.08);color:#00DD44;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">✓ Confirm — stuck to this meal</button>` : '';
-    const cardOpacity = hasItems && !isConfirmed && !confirmedToday ? 'opacity:0.72' : '';
-    html+=`<div class="meal-card m${mi}" style="${cardOpacity};transition:opacity 0.3s"><div class="meal-header"><div class="meal-badge">${m.emoji}</div><div style="flex:1;margin-left:10px"><div class="meal-name">${m.name}</div>${macroRow}</div><div class="meal-cals">${Math.round(mc)} cal</div></div><div class="meal-body">${items||'<div style="font-size:12px;color:var(--muted);padding:6px 0">No foods added yet</div>'}${confirmBtn}<button class="add-food-btn" onclick="openPickerFor('today',${mi})">+ Add food</button></div></div>`;
+    const cardOpacity = '';
+    html+=`<div class="meal-card m${mi}"><div class="meal-header"><div class="meal-badge">${m.emoji}</div><div style="flex:1;margin-left:10px"><div class="meal-name">${m.name}</div>${macroRow}</div><div class="meal-cals">${Math.round(mc)} cal</div></div><div class="meal-body">${items||'<div style="font-size:12px;color:var(--muted);padding:6px 0">No foods added yet</div>'}<button class="add-food-btn" onclick="openPickerFor('today',${mi})">+ Add food</button></div></div>`;
   });
   html+='</div>';
   document.getElementById('plannerContent').innerHTML=html;
@@ -1226,8 +1334,16 @@ function getFullMoonDates(year, month){
   }
   return results;
 }
+function periodSVG(){
+  return `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:0">
+    <div style="width:22px;height:28px;background:#FF2D9B;border-radius:50% 50% 50% 50% / 40% 40% 60% 60%;transform:rotate(0deg);box-shadow:0 0 8px 2px rgba(255,45,155,0.55),0 0 2px 1px rgba(255,128,204,0.4);position:relative;overflow:hidden">
+      <div style="position:absolute;top:5px;left:5px;width:6px;height:9px;background:rgba(255,204,232,0.5);border-radius:50%;transform:rotate(-20deg)"></div>
+    </div>
+  </div>`;
+}
+
 function fullMoonSVG(){
-  return `<svg viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" style="position:absolute;top:-20px;left:50%;transform:translateX(-50%);width:36px;height:36px;pointer-events:none;z-index:10">
+  return `<svg viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0">
     <defs>
       <radialGradient id="mH" cx="40%" cy="38%" r="62%">
         <stop offset="0%" stop-color="#FFFFFF"/>
@@ -1259,6 +1375,137 @@ function fullMoonSVG(){
   </svg>`;
 }
 
+function renderWeekSummary(){
+  // Always render the rolling past-7-days summary below the calendar
+  const today=new Date();
+  const days=[];
+  for(let i=0;i<7;i++){
+    const d=new Date(today);
+    d.setDate(today.getDate()-i);
+    const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    days.push({key:k,date:d});
+  }
+  const rangeStart=days[days.length-1].date.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  const rangeEnd=days[0].date.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  let html=`<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px">${rangeStart} – ${rangeEnd}</div>`;
+  days.forEach(({key:k,date:d})=>{
+    const entry=dailyLog[k];
+    const isToday=k===todayKey();
+    const label=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    const borderStyle=isToday?'border:1.5px solid var(--vv-accent)':'border:1px solid var(--border)';
+    html+=`<div class="log-detail" style="${borderStyle};margin-bottom:8px">`;
+    html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${entry?'10px':'0'}">`;
+    html+=`<div class="log-detail-date" style="margin-bottom:0;${isToday?'color:var(--vv-accent)':''}">${
+      label}${isToday?' <span style="font-size:10px;font-weight:700;background:var(--lavender);color:var(--lav-dark);padding:2px 7px;border-radius:10px;margin-left:4px">today</span>':''}</div>`;
+    if(entry) html+=`<div style="display:flex;gap:6px">
+      <button class="log-edit-btn" style="margin-top:0;width:auto;padding:3px 10px;font-size:11px" onclick="editWeekDay('${k}')">✏ Edit</button>
+      <button class="log-edit-btn" style="margin-top:0;width:auto;padding:3px 10px;font-size:11px;background:var(--mint);color:var(--mint-dark);border-color:rgba(0,255,212,0.3)" onclick="moveWeekDay('${k}')">📅 Move</button>
+    </div>`;
+    html+='</div>';
+    if(entry){
+      html+='<div class="log-macros">';
+      MACROS.forEach(m=>{
+        const goal=m.k==='protein'?proteinGoal:MACRO_GOALS[m.k];
+        const val=entry[m.k]||0;
+        html+=`<div class="macro-card ${m.cls}"><div class="macro-val">${val}</div><div class="macro-goal-lbl">/ ${goal}</div><div class="macro-lbl">${m.lbl}</div></div>`;
+      });
+      html+='</div>';
+      html+=`<div class="log-water">💧 Water: ${entry.water||0} / 80 oz</div>`;
+    } else {
+      html+=`<div style="font-size:12px;color:var(--muted);padding:4px 0">No data logged</div>`;
+    }
+    html+='</div>';
+  });
+  document.getElementById('logDetail').innerHTML=html;
+}
+
+function editWeekDay(editKey){
+  // Inline edit for a specific day in the week summary
+  const entry=dailyLog[editKey]||{};
+  const d=new Date(editKey+'T12:00:00');
+  const label=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  const isPeriod=!!periodDates[editKey];
+  let editHTML=`<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px">Editing — ${label}</div>`;
+  editHTML+=`<div class="log-detail" style="border:1.5px solid var(--vv-accent);margin-bottom:8px">`;
+  editHTML+=`<div class="log-detail-date" style="margin-bottom:10px">${label}</div>`;
+  // Period start toggle at the top of the edit panel
+  editHTML+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;margin-bottom:10px;border-bottom:1px solid var(--border)">`;
+  editHTML+=`<div style="display:flex;align-items:center;gap:8px"><span style="font-size:15px">🌸</span><span style="font-size:13px;font-weight:700;color:#FF80CC">Period start</span></div>`;
+  editHTML+=`<button onclick="togglePeriodDate('${editKey}');editWeekDay('${editKey}')" style="background:${isPeriod?'rgba(255,45,155,0.25)':'rgba(255,255,255,0.06)'};border:1px solid ${isPeriod?'rgba(255,45,155,0.6)':'var(--border)'};color:${isPeriod?'#FF80CC':'var(--muted)'};font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;cursor:pointer">${isPeriod?'✦ Marked':'+ Mark'}</button>`;
+  editHTML+='</div>';
+  editHTML+='<div class="log-edit-grid">';
+  MACROS.forEach(m=>{
+    editHTML+=`<div class="log-edit-group"><div class="log-edit-label">${m.lbl}</div><input class="log-edit-input" id="we-${m.k}" type="number" min="0" value="${entry[m.k]||0}"></div>`;
+  });
+  editHTML+=`<div class="log-edit-group"><div class="log-edit-label">💧 Water (oz)</div><input class="log-edit-input" id="we-water" type="number" min="0" value="${entry.water||0}"></div>`;
+  editHTML+='</div>';
+  editHTML+=`<div class="log-edit-actions"><button class="log-save-btn" onclick="saveWeekEdit('${editKey}')">✦ Save</button><button class="log-cancel-btn" onclick="renderWeekSummary()">Cancel</button></div>`;
+  editHTML+='</div>';
+  document.getElementById('logDetail').innerHTML=editHTML;
+}
+
+function moveWeekDay(fromKey){
+  // Show a date-picker panel to move this log entry to a different date
+  const entry=dailyLog[fromKey];
+  if(!entry) return;
+  const d=new Date(fromKey+'T12:00:00');
+  const label=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  // Default the target date to the day before
+  const prev=new Date(d); prev.setDate(d.getDate()-1);
+  const prevKey=prev.getFullYear()+'-'+String(prev.getMonth()+1).padStart(2,'0')+'-'+String(prev.getDate()).padStart(2,'0');
+  let moveHTML=`<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px">Move Entry — ${label}</div>`;
+  moveHTML+=`<div class="log-detail" style="border:1.5px solid var(--mint-mid);margin-bottom:8px">`;
+  moveHTML+=`<div class="log-detail-date" style="margin-bottom:10px;color:var(--mint-dark)">Moving: ${label}</div>`;
+  moveHTML+=`<div style="margin-bottom:14px">`;
+  moveHTML+=`<div class="log-edit-label" style="margin-bottom:6px">Move to this date:</div>`;
+  moveHTML+=`<input type="date" id="move-target-date" value="${prevKey}" max="${fromKey}" style="width:100%;padding:11px 12px;border:1px solid var(--mint-mid);border-radius:var(--radius-sm);font-size:15px;outline:none;font-family:'Nunito',sans-serif;background:#fff;cursor:pointer">`;
+  moveHTML+=`</div>`;
+  moveHTML+=`<div style="font-size:12px;color:var(--muted);margin-bottom:12px">⚠️ If the target date already has a log entry, it will be <strong style="color:#FF2D9B">overwritten</strong>.</div>`;
+  moveHTML+=`<div class="log-edit-actions"><button class="log-save-btn" style="background:var(--mint-mid);" onclick="confirmMoveDay('${fromKey}')">✦ Move Entry</button><button class="log-cancel-btn" onclick="renderWeekSummary()">Cancel</button></div>`;
+  moveHTML+=`</div>`;
+  document.getElementById('logDetail').innerHTML=moveHTML;
+}
+
+async function confirmMoveDay(fromKey){
+  const input=document.getElementById('move-target-date');
+  if(!input) return;
+  const toKey=input.value;
+  if(!toKey || toKey===fromKey){ toast('Please choose a different date.'); return; }
+  const entry=dailyLog[fromKey];
+  if(!entry){ toast('No entry found to move.'); return; }
+  // Copy to new date, delete from old
+  dailyLog[toKey]=entry;
+  delete dailyLog[fromKey];
+  saveLogLocal();
+  toast('Saving...');
+  // Save new date entry and delete old by saving an empty/null entry
+  await saveLogToSheet(toKey, entry);
+  await saveLogToSheet(fromKey, null);
+  renderCalendar();
+  renderWeekSummary();
+  const toDate=new Date(toKey+'T12:00:00');
+  const toLabel=toDate.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  toast('✦ Entry moved to '+toLabel+'!');
+}
+
+async function saveWeekEdit(editedKey){
+  const entry={
+    cal:parseFloat(document.getElementById('we-cal').value)||0,
+    fat:parseFloat(document.getElementById('we-fat').value)||0,
+    carb:parseFloat(document.getElementById('we-carb').value)||0,
+    sugar:parseFloat(document.getElementById('we-sugar').value)||0,
+    fiber:parseFloat(document.getElementById('we-fiber').value)||0,
+    protein:parseFloat(document.getElementById('we-protein').value)||0,
+    water:parseFloat(document.getElementById('we-water').value)||0
+  };
+  dailyLog[editedKey]=entry;
+  saveLogLocal();
+  toast('Saving...');
+  await saveLogToSheet(editedKey,entry);
+  renderWeekSummary();
+  toast('✦ Log updated!');
+}
+
 function renderCalendar(){
   const year=calViewDate.getFullYear();
   const month=calViewDate.getMonth();
@@ -1278,21 +1525,43 @@ function renderCalendar(){
     if(hasLog)cls+=' has-log';
     if(isToday)cls+=' today';
     if(isSelected)cls+=' selected';
-    const onclick=hasLog?`selectLogDate('${key}')`:'';
+    const onclick=hasLog?`selectLogDate('${key}')`:'';  
     html+=`<div class="${cls}" ${onclick?'onclick="'+onclick+'"':''}>${d}${hasLog?'<div class="cal-dot"></div>':''}</div>`;
   }
   document.getElementById('calGrid').innerHTML=html;
-  // inject moon SVGs after render
+  // inject moon and period SVGs after render
   const fullMoonDays=new Set(getFullMoonDates(year,month));
   document.querySelectorAll('#calGrid .cal-day').forEach(el=>{
     const txt=el.textContent.trim();
     const dayNum=parseInt(txt);
-    if(!isNaN(dayNum)&&fullMoonDays.has(dayNum)){
-      el.style.marginTop='20px';
-      el.style.overflow='visible';
+    if(isNaN(dayNum)) return;
+    const key=year+'-'+String(month+1).padStart(2,'0')+'-'+String(dayNum).padStart(2,'0');
+    const isMoon=fullMoonDays.has(dayNum);
+    const isPeriod=!!periodDates[key];
+    const svgHTML=isPeriod?periodSVG():(isMoon?fullMoonSVG():null);
+    if(svgHTML){
+      el.style.overflow='hidden';
       const wrapper=document.createElement('div');
-      wrapper.innerHTML=fullMoonSVG();
+      wrapper.innerHTML=svgHTML;
       el.insertBefore(wrapper.firstChild,el.firstChild);
+      if(isPeriod){
+        // hide the date number — icon alone is enough
+        const textNodes=[...el.childNodes].filter(n=>n.nodeType===3&&n.textContent.trim());
+        textNodes.forEach(n=>{ n.textContent=''; });
+      } else {
+        // moon: keep date visible in dark contrasting color
+        const textNodes=[...el.childNodes].filter(n=>n.nodeType===3&&n.textContent.trim());
+        textNodes.forEach(n=>{
+          const span=document.createElement('span');
+          span.textContent=n.textContent;
+          span.style.cssText='position:relative;z-index:2;color:#003322;font-weight:800;';
+          n.parentNode.replaceChild(span,n);
+        });
+      }
+    }
+    // period days get a click handler to toggle even without a log entry
+    if(isPeriod&&!el.onclick){
+      el.style.cursor='pointer';
     }
   });
   if(selectedLogDate&&dailyLog[selectedLogDate]){
@@ -1303,7 +1572,8 @@ function renderCalendar(){
 function selectLogDate(key){
   selectedLogDate=key;
   renderCalendar();
-  renderLogDetail(key,false);
+  // scrolling to the week summary below
+  setTimeout(()=>{ const el=document.getElementById('logDetail'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); }, 100);
 }
 
 function renderLogDetail(key, editMode=false, editKey=null){
@@ -1375,7 +1645,7 @@ function changeMonth(dir){
   calViewDate=new Date(calViewDate.getFullYear(),calViewDate.getMonth()+dir,1);
   selectedLogDate=null;
   renderCalendar();
-  document.getElementById('logDetail').innerHTML='<div class="no-log-msg">Tap a highlighted date to view that day\'s summary.</div>';
+  renderWeekSummary();
 }
 
 function cupSVG(filled){
@@ -1469,13 +1739,127 @@ function launchMeteorShower(){
   animate();
 }
 
+const CYCLE_PHASES = {
+  menstrual: {
+    label: 'Menstrual', emoji: '🌸', dotColor: '#FF2D9B', nameClass: 'menstrual',
+    desc: 'Day 1–5 · Rest & replenish',
+    tagColor: 'rgba(255,45,155,0.15)', tagBorder: 'rgba(255,45,155,0.3)', tagText: '#FF80CC',
+    chipBg: 'rgba(255,45,155,0.1)', chipBorder: 'rgba(255,45,155,0.22)',
+    nutrients: [
+      { name: 'Magnesium', color: '#FF2D9B', foods: ['dark chocolate','pumpkin seeds','spinach','almonds'] },
+      { name: 'Iron', color: '#FF7A00', foods: ['beef','spinach','lentils','quinoa','hazelnut'] },
+      { name: 'Zinc', color: '#FFD600', foods: ['beef','legumes','nuts & seeds','seafood'] },
+      { name: 'Omega-3s', color: '#00FFD4', foods: ['fatty fish','chia seeds','walnuts','flaxseeds'] },
+      { name: 'Antioxidants', color: '#00FFA3', foods: ['blueberries','citrus','green tea','bell peppers'] },
+      { name: 'Vitamin C + Iron', color: '#FF7A00', foods: ['strawberries','bell peppers','citrus with spinach'] },
+      { name: 'Anti-inflammatory', color: '#00B4FF', foods: ['ginger','turmeric','fatty fish','walnuts'] },
+      { name: 'B Vitamins', color: '#80DAFF', foods: ['carrots','sweet potatoes','broccoli','brown rice'] },
+      { name: 'Hormone Fats', color: '#BF5FFF', foods: ['avocado','fatty fish','olive oil'] }
+    ]
+  },
+  follicular: {
+    label: 'Follicular', emoji: '🌱', dotColor: '#00B4FF', nameClass: 'follicular',
+    desc: 'Day 6–13 · Build & energize',
+    tagColor: 'rgba(0,180,255,0.12)', tagBorder: 'rgba(0,180,255,0.3)', tagText: '#80DAFF',
+    chipBg: 'rgba(0,180,255,0.1)', chipBorder: 'rgba(0,180,255,0.22)',
+    nutrients: [
+      { name: 'Estrogen Support', color: '#00B4FF', foods: ['flaxseeds','fermented foods','cruciferous veggies'] },
+      { name: 'Lean Protein', color: '#00FFD4', foods: ['chicken','eggs','legumes','Greek yogurt'] },
+      { name: 'Complex Carbs', color: '#80DAFF', foods: ['oats','quinoa','sweet potato','brown rice'] },
+      { name: 'Zinc', color: '#FFD600', foods: ['pumpkin seeds','chickpeas','cashews'] },
+      { name: 'B Vitamins', color: '#BF5FFF', foods: ['leafy greens','eggs','sunflower seeds'] }
+    ]
+  },
+  ovulation: {
+    label: 'Ovulation', emoji: '✨', dotColor: '#00FFD4', nameClass: 'ovulation',
+    desc: 'Day 14–17 · Peak energy',
+    tagColor: 'rgba(0,255,212,0.12)', tagBorder: 'rgba(0,255,212,0.3)', tagText: '#7FFFEE',
+    chipBg: 'rgba(0,255,212,0.1)', chipBorder: 'rgba(0,255,212,0.22)',
+    nutrients: [
+      { name: 'Antioxidants', color: '#00FFD4', foods: ['berries','spinach','bell peppers','citrus'] },
+      { name: 'Fiber', color: '#00FFA3', foods: ['broccoli','Brussels sprouts','chia seeds'] },
+      { name: 'Zinc', color: '#FFD600', foods: ['pumpkin seeds','beef','oysters'] },
+      { name: 'Anti-inflammatory', color: '#00B4FF', foods: ['fatty fish','turmeric','ginger','walnuts'] },
+      { name: 'Magnesium', color: '#7FFFEE', foods: ['dark chocolate','avocado','almonds'] }
+    ]
+  },
+  luteal: {
+    label: 'Luteal', emoji: '🌙', dotColor: '#FFD600', nameClass: 'luteal',
+    desc: 'Day 18–28 · Calm & support',
+    tagColor: 'rgba(255,214,0,0.12)', tagBorder: 'rgba(255,214,0,0.3)', tagText: '#FFE97A',
+    chipBg: 'rgba(255,214,0,0.1)', chipBorder: 'rgba(255,214,0,0.22)',
+    nutrients: [
+      { name: 'Magnesium', color: '#FFD600', foods: ['dark chocolate','pumpkin seeds','spinach','almonds'] },
+      { name: 'Complex Carbs', color: '#FFE97A', foods: ['oats','sweet potato','brown rice','lentils'] },
+      { name: 'Calcium', color: '#00B4FF', foods: ['Greek yogurt','kale','almonds','sardines'] },
+      { name: 'B6', color: '#BF5FFF', foods: ['bananas','chicken','potatoes','sunflower seeds'] },
+      { name: 'Anti-inflammatory', color: '#00FFD4', foods: ['fatty fish','turmeric','ginger','berries'] }
+    ]
+  }
+};
+
+function getCyclePhase(){ return localStorage.getItem('vv_cycle_phase') || 'menstrual'; }
+function setCyclePhase(p){ localStorage.setItem('vv_cycle_phase', p); }
+
+function buildCycleBanner(tLabel){
+  const phaseKey = getCyclePhase();
+  const ph = CYCLE_PHASES[phaseKey];
+  const expanded = localStorage.getItem('vv_cycle_expanded') === '1';
+  let tags = ph.nutrients.map(n =>
+    `<span class="cycle-tag" style="background:${ph.tagColor};border:1px solid ${ph.tagBorder};color:${ph.tagText}">${n.name}</span>`
+  ).join('');
+  let detail = ph.nutrients.map(n =>
+    `<div class="cycle-nutrient-row">
+      <div class="cycle-nutrient-name" style="color:${n.color}">${n.name}</div>
+      <div class="cycle-food-chips">${n.foods.map(f=>`<span class="cycle-food-chip" style="background:${ph.chipBg};border:1px solid ${ph.chipBorder}">${f}</span>`).join('')}</div>
+    </div>`
+  ).join('');
+  return `<div class="cycle-banner">
+    <div class="cycle-banner-top">
+      <div class="cycle-phase-name ${ph.nameClass}">${ph.emoji} ${ph.label} phase</div>
+      <button class="cycle-change-btn" onclick="openCycleSheet()">Change</button>
+    </div>
+    <div style="font-size:12px;font-weight:700;color:var(--mint-dark);margin-bottom:8px">Prepping for ${tLabel}</div>
+    <div class="cycle-focus-label">Prioritize tomorrow</div>
+    <div class="cycle-tags">${tags}</div>
+    <button class="cycle-expand-btn" id="cycleExpandBtn" onclick="toggleCycleDetail()">${expanded ? '▴ Hide food sources' : '▾ Show food sources'}</button>
+    <div class="cycle-detail ${expanded ? 'open' : ''}" id="cycleDetail">${detail}</div>
+  </div>`;
+}
+
+function toggleCycleDetail(){
+  const d = document.getElementById('cycleDetail');
+  const b = document.getElementById('cycleExpandBtn');
+  if(!d) return;
+  const isOpen = d.classList.contains('open');
+  d.classList.toggle('open', !isOpen);
+  localStorage.setItem('vv_cycle_expanded', isOpen ? '0' : '1');
+  if(b) b.textContent = isOpen ? '▾ Show food sources' : '▴ Hide food sources';
+}
+
+function openCycleSheet(){
+  const current = getCyclePhase();
+  const sheet = document.getElementById('cyclePhaseSheet');
+  if(!sheet) return;
+  sheet.querySelectorAll('.cycle-phase-option').forEach(el => {
+    el.classList.toggle('selected', el.dataset.phase === current);
+  });
+  sheet.classList.add('open');
+}
+function closeCycleSheet(){ document.getElementById('cyclePhaseSheet').classList.remove('open'); }
+function selectCyclePhase(p){
+  setCyclePhase(p);
+  closeCycleSheet();
+  renderTomorrow();
+}
+
 function renderTomorrow(){
   const tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);
   const tLabel=tomorrow.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
   const totals={cal:0,fat:0,carb:0,sugar:0,fiber:0,protein:0};
-  state.tomorrowMeals.forEach(meal=>meal.forEach(fid=>{const f=state.foods.find(x=>x.id===fid);if(f){totals.cal+=f.cal;totals.fat+=f.fat;totals.carb+=f.carb;totals.sugar+=f.sugar;totals.fiber+=f.fiber;totals.protein+=f.protein;}}));
+  state.tomorrowMeals.forEach(meal=>meal.forEach(rawE=>{const e=normEntry(rawE);const f=state.foods.find(x=>x.id===e.id);const mult=e.qty*e.frac;if(f){totals.cal+=f.cal*mult;totals.fat+=f.fat*mult;totals.carb+=f.carb*mult;totals.sugar+=f.sugar*mult;totals.fiber+=f.fiber*mult;totals.protein+=f.protein*mult;}}));
   let html='';
-  html+=`<div style="background:var(--mint);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px"><div style="font-size:20px">🌙</div><div><div style="font-size:12px;font-weight:700;color:var(--mint-dark);text-transform:uppercase;letter-spacing:.5px">Prepping for</div><div style="font-size:14px;font-weight:700;color:var(--mint-dark)">${tLabel}</div></div></div>`;
+  html += buildCycleBanner(tLabel);
   html+='<div class="section-title">Projected Totals</div><div class="daily-totals">';
   html+=buildMacroCards(totals);
   html+='</div>';
@@ -1947,6 +2331,7 @@ async function startApp(){
   MACRO_GOALS.cal=g.cal;MACRO_GOALS.protein=g.protein;MACRO_GOALS.fat=g.fat;MACRO_GOALS.carb=g.carb;MACRO_GOALS.sugar=g.sugar;MACRO_GOALS.fiber=g.fiber;
   proteinGoal=g.protein;
   loadLocal();
+  loadPeriodLocal();
   renderPlanner();
   const hasData = await loadFoodsFromSheet();
   if(!hasData){
@@ -1961,6 +2346,7 @@ async function startApp(){
   seedRecentsFromPlan();
   renderPlanner();
   await loadLogFromSheet();
+  await loadPeriodsFromSheet();
   // Brand-new account with no saved profile: prompt them to set it up so their
   // goals are based on their own body, not the placeholder defaults.
   if(!hadSettings && !profileConfigured){

@@ -132,10 +132,14 @@ class VitalVortexHandler(BaseHTTPRequestHandler):
         elif action == "log":
             date_key = body.get("date")
             entry = body.get("entry")
-            if date_key and entry:
+            if date_key:
                 if "log" not in data:
                     data["log"] = {}
-                data["log"][date_key] = entry
+                if entry is None:
+                    # null entry = delete this date from the log
+                    data["log"].pop(date_key, None)
+                else:
+                    data["log"][date_key] = entry
                 save_data(data)
             self.send_json({"ok": True})
 
