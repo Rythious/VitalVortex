@@ -1,21 +1,18 @@
 #!/usr/bin/env python3
 """
-One-time data import: vitalvortex_data.json -> SQLite, under one user account.
+Seed one user's data into SQLite from a JSON export.
 
-Use this to migrate your wife's existing history (foods, plan, saved days) out of
-the Google Sheet and into the new SQLite database:
+Loads a `vitalvortex_data.json` file into a local `vitalvortex.db`, creating (or
+updating) the named account in the process:
 
-    1. On her machine, run the existing Deployment/sheet_to_json.py to produce a
-       fresh vitalvortex_data.json from the Google Sheet.
-    2. Run this script to load that JSON into a local vitalvortex.db, creating (or
-       updating) her account in the process:
+    python import_data.py vitalvortex_data.json user@email.com "password"
 
-       python import_data.py vitalvortex_data.json her@email.com "her-password"
-
-    3. Ship vitalvortex.db up to the VPS volume per DEPLOY.md.
+Then copy vitalvortex.db into the live `vitalvortex-data` volume (see README).
+Originally used for the one-time migration off the Google Sheet; kept as a general
+seeding utility.
 
 Re-running for the same user replaces that user's foods/plan/log (it does not
-touch other users). The expected JSON shape matches the old local server:
+touch other users). Expected JSON shape:
     { "foods": [ {id,name,portion,cal,fat,carb,sugar,fiber,protein}, ... ],
       "plan":  "<json string blob>" | null,
       "log":   { "YYYY-MM-DD": {cal,fat,carb,sugar,fiber,protein,water}, ... } }

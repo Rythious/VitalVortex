@@ -2,8 +2,9 @@
 
 A personal macro and nutrition tracker. Plan meals across five slots (Breakfast,
 Morning Snack, Lunch, Afternoon Snack, Dinner), track water and macros (calories,
-protein, fat, carbs, sugar, fiber) against per-user goals, and keep a day-by-day
-history calendar.
+protein, fat, carbs, sugar, fiber) against per-user goals, keep a day-by-day
+history calendar, and track a menstrual cycle with phase-aware food
+recommendations.
 
 Live at **https://vitalvortex.duckdns.org**.
 
@@ -34,11 +35,14 @@ Compose on a DigitalOcean droplet behind Caddy).
 - **One process, one origin.** Flask serves both the static app (`/`) and the
   JSON API (`/api`). Same origin means no CORS and the session cookie rides along
   automatically — the frontend is just `fetch('/api?...')`.
-- **The API is a 6-action dispatcher** carried over verbatim from the original
-  Apps Script / local-server design, so the frontend's data layer was almost
-  unchanged: `read` / `write` (foods), `loadplan` / `saveplan` (the plan blob),
-  `readlog` / `log` (the day history). Three auth actions were added:
-  `login` / `logout` / `me`.
+- **The API is a single `/api` action dispatcher.** The six data actions kept
+  their original shape so the frontend's data layer barely changed: `read` /
+  `write` (foods), `loadplan` / `saveplan` (the plan blob), `readlog` / `log`
+  (the day history; a `log` with a null entry deletes that date — used to unmark
+  a period day and to move a log entry to another date). Added on top: auth
+  (`login` / `logout` / `register` / `me`), per-user settings
+  (`loadsettings` / `savesettings`), and the food-search proxy
+  (`foodsearch` / `fooddetail`).
 - **Every data action is scoped to the logged-in `user_id`** pulled from the
   session, so each person's foods, plan, and history are fully separate.
 - **Schema applied at startup.** `init_db()` runs `CREATE TABLE IF NOT EXISTS`
@@ -119,9 +123,8 @@ are correct for any user — not just the original single female user the app wa
 first written for. A brand-new account is prompted to fill in its profile on
 first login rather than inheriting placeholder defaults.
 
-> Note: the original Google Sheet stored only foods/plan/history, never the
-> profile (that lived in the browser). So after importing, the first login on the
-> new app will prompt for profile setup once.
+> Note: profile/goals/theme are set in-app and stored per user, so each new
+> account is prompted to fill in its profile on first login.
 
 ### Food database search (USDA FoodData Central)
 
@@ -175,26 +178,23 @@ volumes, so this is the entire deploy.
 
 ---
 
-## Migrating the existing Google Sheet data (one-time)
+## Seeding a user from a JSON export
 
-The original history lived in the Google Sheet. To bring it into SQLite:
+The original Google Sheet data was migrated into SQLite once and the Sheet/Apps
+Script backend has been retired. `import_data.py` remains as a general utility to
+seed (or re-seed) one user's foods, plan, and day history from a JSON export of
+the shape `{foods, plan, log}`:
 
-1. On the machine that has Google access, run `Deployment/sheet_to_json.py` to
-   produce a fresh `vitalvortex_data.json` from the sheet.
-2. Build a local DB seeded with that data under her account:
+```bash
+python import_data.py vitalvortex_data.json user@email.com "password"
+```
 
-   ```bash
-   python import_data.py vitalvortex_data.json her@email.com "her-password"
-   ```
+That writes a local `vitalvortex.db` with the user's data. To load it into the
+live app, copy it into the `vitalvortex-data` volume (per `~/DevNotes/vps.md`):
 
-   This creates `vitalvortex.db` with her foods, plan, and full day history.
-3. Push the DB into the live volume (procedure from `vps.md`):
-
-   ```bash
-   scp vitalvortex.db root@<droplet>:/tmp/vitalvortex.db
-   docker compose -f /opt/vitalvortex/docker-compose.yml stop
-   docker cp /tmp/vitalvortex.db <container>:/data/vitalvortex.db
-   docker compose -f /opt/vitalvortex/docker-compose.yml start
-   ```
-
-Add the second account with `seed-user` (above) once the container is up.
+```bash
+scp vitalvortex.db root@<droplet>:/tmp/vitalvortex.db
+docker compose -f /opt/vitalvortex/docker-compose.yml stop
+docker cp /tmp/vitalvortex.db <container>:/data/vitalvortex.db
+docker compose -f /opt/vitalvortex/docker-compose.yml start
+```

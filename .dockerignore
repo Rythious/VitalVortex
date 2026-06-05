@@ -4,6 +4,4 @@ __pycache__/
 keys/
 *.db
 vitalvortex_data.json
-Deployment/
 _smoke/
-*.bat
