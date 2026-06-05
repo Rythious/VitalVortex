@@ -1428,11 +1428,13 @@ function editWeekDay(editKey){
   let editHTML=`<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px">Editing — ${label}</div>`;
   editHTML+=`<div class="log-detail" style="border:1.5px solid var(--vv-accent);margin-bottom:8px">`;
   editHTML+=`<div class="log-detail-date" style="margin-bottom:10px">${label}</div>`;
-  // Period start toggle at the top of the edit panel
-  editHTML+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;margin-bottom:10px;border-bottom:1px solid var(--border)">`;
-  editHTML+=`<div style="display:flex;align-items:center;gap:8px"><span style="font-size:15px">🌸</span><span style="font-size:13px;font-weight:700;color:#FF80CC">Period start</span></div>`;
-  editHTML+=`<button onclick="togglePeriodDate('${editKey}');editWeekDay('${editKey}')" style="background:${isPeriod?'rgba(255,45,155,0.25)':'rgba(255,255,255,0.06)'};border:1px solid ${isPeriod?'rgba(255,45,155,0.6)':'var(--border)'};color:${isPeriod?'#FF80CC':'var(--muted)'};font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;cursor:pointer">${isPeriod?'✦ Marked':'+ Mark'}</button>`;
-  editHTML+='</div>';
+  // Period start toggle at the top of the edit panel (female profiles only)
+  if(cycleTrackingEnabled()){
+    editHTML+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;margin-bottom:10px;border-bottom:1px solid var(--border)">`;
+    editHTML+=`<div style="display:flex;align-items:center;gap:8px"><span style="font-size:15px">🌸</span><span style="font-size:13px;font-weight:700;color:#FF80CC">Period start</span></div>`;
+    editHTML+=`<button onclick="togglePeriodDate('${editKey}');editWeekDay('${editKey}')" style="background:${isPeriod?'rgba(255,45,155,0.25)':'rgba(255,255,255,0.06)'};border:1px solid ${isPeriod?'rgba(255,45,155,0.6)':'var(--border)'};color:${isPeriod?'#FF80CC':'var(--muted)'};font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;cursor:pointer">${isPeriod?'✦ Marked':'+ Mark'}</button>`;
+    editHTML+='</div>';
+  }
   editHTML+='<div class="log-edit-grid">';
   MACROS.forEach(m=>{
     editHTML+=`<div class="log-edit-group"><div class="log-edit-label">${m.lbl}</div><input class="log-edit-input" id="we-${m.k}" type="number" min="0" value="${entry[m.k]||0}"></div>`;
@@ -1798,6 +1800,8 @@ const CYCLE_PHASES = {
   }
 };
 
+// Cycle and period tracking are shown only when the profile sex is female.
+function cycleTrackingEnabled(){ return (userProfile.sex || 'female') === 'female'; }
 function getCyclePhase(){ return localStorage.getItem('vv_cycle_phase') || 'menstrual'; }
 function setCyclePhase(p){ localStorage.setItem('vv_cycle_phase', p); }
 
@@ -1859,7 +1863,7 @@ function renderTomorrow(){
   const totals={cal:0,fat:0,carb:0,sugar:0,fiber:0,protein:0};
   state.tomorrowMeals.forEach(meal=>meal.forEach(rawE=>{const e=normEntry(rawE);const f=state.foods.find(x=>x.id===e.id);const mult=e.qty*e.frac;if(f){totals.cal+=f.cal*mult;totals.fat+=f.fat*mult;totals.carb+=f.carb*mult;totals.sugar+=f.sugar*mult;totals.fiber+=f.fiber*mult;totals.protein+=f.protein*mult;}}));
   let html='';
-  html += buildCycleBanner(tLabel);
+  if(cycleTrackingEnabled()) html += buildCycleBanner(tLabel);
   html+='<div class="section-title">Projected Totals</div><div class="daily-totals">';
   html+=buildMacroCards(totals);
   html+='</div>';
