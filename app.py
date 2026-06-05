@@ -192,7 +192,16 @@ def action_read(uid):
 
 
 def action_write(uid, body):
-    foods = body.get("foods", [])
+    # Deduplicate by id (keeping the first), matching the old backend's guard
+    # against duplicate menu items appearing during a sync.
+    seen = set()
+    unique = []
+    for f in body.get("foods", []):
+        fid = f.get("id")
+        if fid is None or fid in seen:
+            continue
+        seen.add(fid)
+        unique.append(f)
     db = get_db()
     db.execute("DELETE FROM foods WHERE user_id = ?", (uid,))
     db.executemany(
@@ -202,7 +211,7 @@ def action_write(uid, body):
             uid, int(f.get("id")), str(f.get("name", "")), str(f.get("portion", "")),
             _num(f.get("cal")), _num(f.get("fat")), _num(f.get("carb")),
             _num(f.get("sugar")), _num(f.get("fiber")), _num(f.get("protein")),
-        ) for f in foods if f.get("id") is not None],
+        ) for f in unique],
     )
     db.commit()
     return jsonify({"ok": True})
@@ -241,16 +250,23 @@ def action_readlog(uid):
 def action_log(uid, body):
     date_key = body.get("date")
     entry = body.get("entry")
-    if date_key and entry:
+    if date_key:
         db = get_db()
-        db.execute(
-            "INSERT INTO log (user_id, date, cal, fat, carb, sugar, fiber, protein, water) "
-            "VALUES (?,?,?,?,?,?,?,?,?) "
-            "ON CONFLICT(user_id, date) DO UPDATE SET "
-            "cal=excluded.cal, fat=excluded.fat, carb=excluded.carb, sugar=excluded.sugar, "
-            "fiber=excluded.fiber, protein=excluded.protein, water=excluded.water",
-            (uid, str(date_key)) + tuple(_num(entry.get(c)) for c in LOG_COLS),
-        )
+        if entry is None:
+            # A null entry deletes that date — used to unmark a period day and to
+            # clear the old date when a log entry is moved to a different day.
+            db.execute(
+                "DELETE FROM log WHERE user_id = ? AND date = ?", (uid, str(date_key))
+            )
+        else:
+            db.execute(
+                "INSERT INTO log (user_id, date, cal, fat, carb, sugar, fiber, protein, water) "
+                "VALUES (?,?,?,?,?,?,?,?,?) "
+                "ON CONFLICT(user_id, date) DO UPDATE SET "
+                "cal=excluded.cal, fat=excluded.fat, carb=excluded.carb, sugar=excluded.sugar, "
+                "fiber=excluded.fiber, protein=excluded.protein, water=excluded.water",
+                (uid, str(date_key)) + tuple(_num(entry.get(c)) for c in LOG_COLS),
+            )
         db.commit()
     return jsonify({"ok": True})
 
