@@ -23,24 +23,16 @@ the orientation for Claude agents working in the repo.
 
 ## About the Collaborators
 
-This repo is worked on by two people from two machines, and **two different Claude
-agents read this file** — so adjust to whoever you're working with (the git
-`user.name` is a good tell):
+- **Justin** (`Justin Morgan`, rythious) — the sole developer working in this
+  repo, and who runs the VPS, Docker, and deployment. Normal technical depth is
+  fine. All development and deployment happen from here.
 
-- **Carolyn** (`Carolyn Morgan`) — the app's creator and primary daily user.
-  **She is not a developer and does not write code.** When working in her copy:
-  - Don't ask her to edit code or run unfamiliar terminal commands.
-  - Explain changes in plain, friendly terms; avoid jargon ("the app", not "the
-    frontend"; "saved", not "persisted").
-  - She develops features by describing them to her Claude agent, which edits
-    `Index.html`. To preview a change locally she **just refreshes the browser
-    (F5)**. To get a change onto the *live* site, the Docker image must be rebuilt
-    and pushed (that's Justin's side — see Deployment).
-  - If something breaks, give simple step-by-step recovery.
-
-- **Justin** (`Justin Morgan`, rythious) — handles the VPS, Docker, and
-  deployment. Normal technical depth is fine; he runs the droplet and pushes
-  images.
+- **Carolyn** — the app's creator and primary daily user, now acting as the
+  **product owner**: she is not a developer and no longer edits the code or runs
+  the repo herself. Feature requests and bug reports come from her *through*
+  Justin, who implements and deploys them. Keep her in mind as the end user —
+  she's a non-technical daily user, so features and copy should stay simple and
+  friendly.
 
 ---
 
@@ -141,8 +133,7 @@ User data and the session key live in the `vitalvortex-data` and
 ## Source Control (Git)
 
 The repo has a GitHub remote (`origin` = `github.com:Rythious/VitalVortex`).
-Carolyn's feature work is committed on her machine and pushed to origin; Justin
-pulls and deploys.
+Development and deployment happen from this repo (Justin's machine).
 
 - **Commit after a change is working** — not broken/half-finished work.
 - Branch off `main` for new work; don't push unless asked.
