@@ -3,10 +3,10 @@
 A personal macro and nutrition tracker. Plan meals across five slots (Breakfast,
 Morning Snack, Lunch, Afternoon Snack, Dinner), track water and macros (calories,
 protein, fat, carbs, sugar, fiber) against per-user goals, keep a day-by-day
-history calendar, and track a menstrual cycle with phase-aware food
-recommendations.
+history calendar, and (for profiles with sex set to female) track a menstrual
+cycle with phase-aware food recommendations.
 
-Live at **https://vitalvortex.duckdns.org**.
+Live at **https://vitalvortex.morgo.app**.
 
 Originally a Google Apps Script web app backed by a Google Sheet; now a small
 self-hosted Flask + SQLite app deployed the same way as TheChoreDrawer (Docker
@@ -153,13 +153,13 @@ with no licensing restriction.
 ## Deployment
 
 Same workflow as the other apps on the droplet (see `~/DevNotes/vps.md`). DNS and
-the Caddy route for `vitalvortex.duckdns.org → localhost:8082` already exist, so
+the Caddy route for `vitalvortex.morgo.app → localhost:8082` already exist, so
 there are **no infra changes** — just ship the image and bring up the stack.
 
 ### One-time setup on the host
 
 1. Copy this repo's `docker-compose.yml` to `/opt/vitalvortex/docker-compose.yml`.
-2. The Caddy block for `vitalvortex.duckdns.org` is already present. Done.
+2. The Caddy block for `vitalvortex.morgo.app` is already present. Done.
 
 ### Ship a new version
 

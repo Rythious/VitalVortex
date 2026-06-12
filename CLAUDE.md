@@ -4,7 +4,7 @@
 
 **Vital Vortex** is a personal macro and nutrition tracking web app. It is a
 self-hosted **Flask + SQLite** app, deployed with **Docker Compose on a
-DigitalOcean droplet behind Caddy**, live at **https://vitalvortex.duckdns.org**.
+DigitalOcean droplet behind Caddy**, live at **https://vitalvortex.morgo.app**.
 
 It started life as a Google Apps Script web app backed by a Google Sheet; that
 backend has been fully retired (see "History" below). Don't suggest Google

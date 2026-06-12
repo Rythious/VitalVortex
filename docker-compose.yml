@@ -1,5 +1,5 @@
 # Vital Vortex — one Compose stack, same shape as TheChoreDrawer.
-# Caddy already routes vitalvortex.duckdns.org -> localhost:8082, so this
+# Caddy already routes vitalvortex.morgo.app -> localhost:8082, so this
 # publishes the container's 8080 to 127.0.0.1:8082 and needs no Caddy changes.
 services:
   vitalvortex:
