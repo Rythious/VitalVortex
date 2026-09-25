@@ -115,7 +115,7 @@ process. (Both are gitignored locally.)
 
 The live site runs the Docker image `rythious/vitalvortex:latest`. **Refreshing
 the browser only shows local changes — the live site updates only when the image
-is rebuilt and pushed.** Full steps are in `README.md` and `~/DevNotes/vps.md`:
+is rebuilt and pushed.** Full steps are in `README.md` and `../VpsConfig/docs/vps.md`:
 
 ```bash
 # locally

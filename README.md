@@ -152,7 +152,7 @@ with no licensing restriction.
 
 ## Deployment
 
-Same workflow as the other apps on the droplet (see `~/DevNotes/vps.md`). DNS and
+Same workflow as the other apps on the droplet (see `../VpsConfig/docs/vps.md`). DNS and
 the Caddy route for `vitalvortex.morgo.app → localhost:8082` already exist, so
 there are **no infra changes** — just ship the image and bring up the stack.
 
@@ -190,7 +190,7 @@ python import_data.py vitalvortex_data.json user@email.com "password"
 ```
 
 That writes a local `vitalvortex.db` with the user's data. To load it into the
-live app, copy it into the `vitalvortex-data` volume (per `~/DevNotes/vps.md`):
+live app, copy it into the `vitalvortex-data` volume (per `../VpsConfig/docs/vps.md`):
 
 ```bash
 scp vitalvortex.db root@<droplet>:/tmp/vitalvortex.db
