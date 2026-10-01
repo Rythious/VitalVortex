@@ -6,11 +6,33 @@ protein, fat, carbs, sugar, fiber) against per-user goals, keep a day-by-day
 history calendar, and (for profiles with sex set to female) track a menstrual
 cycle with phase-aware food recommendations.
 
-Live at **https://vitalvortex.morgo.app**.
-
 Originally a Google Apps Script web app backed by a Google Sheet; now a small
 self-hosted Flask + SQLite app deployed the same way as TheChoreDrawer (Docker
 Compose on a DigitalOcean droplet behind Caddy).
+
+---
+
+## Hosting status: retired (since 2026-10-01)
+
+The app is no longer used, so it was taken offline. Nothing was lost:
+
+| Piece | Where it is now |
+|---|---|
+| Data | Local backup at `C:\Users\justi\Backups\vitalvortex\2026-10-01\` (SQLite file + SQL dump, integrity-checked, restore-tested; see the `README.md` there). Not in git. |
+| Second copy | The `vitalvortex_vitalvortex-data` volume and `/opt/vitalvortex` (compose + `.env`) were left on the apps droplet. They may be deleted later. |
+| Image | Docker Hub `rythious/vitalvortex:retired-2026-10-01`, the exact image that last ran (built from `8620449`; later commits changed only docs and a compose comment) |
+| Code | git tag `retired-2026-10-01` |
+
+Torn down: the container (`docker compose down`), the `vitalvortex.morgo.app`
+Caddy block (VpsConfig repo), and its Cloudflare A record.
+
+**To bring it back:** re-add the Caddy block in `VpsConfig/hosts/apps/Caddyfile`
+(`vitalvortex.morgo.app { reverse_proxy localhost:8082 }`) and the grey-cloud A
+record. Then run `docker compose up -d` in `/opt/vitalvortex`. If the volumes are
+still there, that's all. If they were deleted, restore the backup's
+`vitalvortex.db` into the data volume first (steps in the backup's README).
+
+The rest of this README describes the app as it ran.
 
 ---
 

@@ -4,7 +4,12 @@
 
 **Vital Vortex** is a personal macro and nutrition tracking web app. It is a
 self-hosted **Flask + SQLite** app, deployed with **Docker Compose on a
-DigitalOcean droplet behind Caddy**, live at **https://vitalvortex.morgo.app**.
+DigitalOcean droplet behind Caddy**, formerly at **https://vitalvortex.morgo.app**.
+
+> **Retired from hosting on 2026-10-01** — the app is no longer used, and the live
+> site is down. See "Hosting status" in `README.md` for where the data backup,
+> frozen image, and git tag are, and how to bring it back. Don't treat the
+> "Deployment (live site)" steps below as current unless it has been revived.
 
 It started life as a Google Apps Script web app backed by a Google Sheet; that
 backend has been fully retired (see "History" below). Don't suggest Google
